@@ -99,7 +99,7 @@ export default function CreatePage() {
   if (brandsLoading || readinessLoading) {
     return (
       <CreatePageShell>
-        <LoadingState label="Loading brands" />
+        <LoadingState label="Loading brands" variant="form" />
       </CreatePageShell>
     );
   }

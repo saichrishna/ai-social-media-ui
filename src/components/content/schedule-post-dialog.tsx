@@ -240,6 +240,8 @@ export function SchedulePostDialog({
               </Button>
               <Button
                 type="button"
+                variant="studio"
+                loading={mutation.isPending}
                 disabled={!canSubmit}
                 onClick={() => {
                   if (scheduleIsInPast()) {
@@ -250,7 +252,7 @@ export function SchedulePostDialog({
                   mutation.mutate();
                 }}
               >
-                {mutation.isPending ? "Scheduling..." : "Schedule Post"}
+                Schedule post
               </Button>
             </DialogFooter>
           </>

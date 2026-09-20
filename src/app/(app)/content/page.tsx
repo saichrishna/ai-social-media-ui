@@ -109,7 +109,7 @@ export default function ContentLibraryPage() {
       </FilterPillBar>
 
       {postsQuery.isLoading ? (
-        <LoadingState label="Loading content" />
+        <LoadingState label="Loading content" variant="library" />
       ) : postsQuery.isError ? (
         <ErrorState
           message={USER_SAFE_ERROR_MESSAGE}

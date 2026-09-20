@@ -21,6 +21,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-panel focus:outline-none focus:ring-3 focus:ring-ring/50"
+      >
+        Skip to main content
+      </a>
       <aside
         className={cn(
           "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[var(--shadow-sidebar)] md:flex md:flex-col",
@@ -73,7 +79,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Sheet>
           <BrandSelector />
         </header>
-        <div className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6">{children}</div>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6 outline-none"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

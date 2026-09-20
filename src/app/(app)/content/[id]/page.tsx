@@ -37,7 +37,9 @@ import { ReviewCopilot } from "@/components/ux/review-copilot";
 import {
   isApproveBlockedStatus,
   studioStatusActions,
+  studioStatusGuidance,
 } from "@/lib/content/studio-status-actions";
+import { ExpandableText } from "@/components/ux/expandable-text";
 import { useUnsavedChangesGuard } from "@/lib/ux/use-unsaved-changes-guard";
 import type { SocialPost } from "@/types/post";
 
@@ -175,7 +177,7 @@ export default function ContentDetailPage({
   if (query.isLoading) {
     return (
       <PageLayout width="studio">
-        <LoadingState label="Loading content" />
+        <LoadingState label="Loading content" variant="studio" />
       </PageLayout>
     );
   }
@@ -215,6 +217,7 @@ export default function ContentDetailPage({
   const signedUrl = envelope.image_signed_url ?? null;
   const review = reviewDisplay(envelope.review ?? studioPost.review);
   const actions = studioStatusActions(studioPost.status);
+  const statusGuidance = studioStatusGuidance(studioPost.status);
   const hashtags = Array.isArray(studioPost.hashtags) ? studioPost.hashtags : [];
   const regenerateMapped = regenerateMutation.data
     ? mapGenerateSocialContentResult(regenerateMutation.data)
@@ -281,6 +284,15 @@ export default function ContentDetailPage({
           </Button>
         }
       />
+
+      {statusGuidance && !editing ? (
+        <p
+          className="surface-panel px-4 py-3 text-sm text-muted-foreground"
+          role="status"
+        >
+          {statusGuidance}
+        </p>
+      ) : null}
 
       {saveFailed ? (
         <ErrorState
@@ -402,8 +414,8 @@ export default function ContentDetailPage({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving..." : "Save Changes"}
+              <Button type="submit" loading={saveMutation.isPending}>
+                Save changes
               </Button>
             </div>
           </form>
@@ -411,7 +423,15 @@ export default function ContentDetailPage({
           <div className="surface-panel flex flex-col gap-4 p-5">
             <h2 className="text-lg font-semibold tracking-tight">Caption</h2>
             <Field label="Headline" value={post.headline} />
-            <Field label="Caption" value={post.caption} />
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Caption
+              </h3>
+              <ExpandableText
+                text={post.caption ?? ""}
+                className="mt-1 text-foreground"
+              />
+            </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">
                 Hashtags
@@ -493,10 +513,8 @@ export default function ContentDetailPage({
             <Button
               type="button"
               variant="studio"
-              disabled={
-                approveMutation.isPending ||
-                isApproveBlockedStatus(post.status)
-              }
+              loading={approveMutation.isPending}
+              disabled={isApproveBlockedStatus(post.status)}
               onClick={() => {
                 approveMutation.mutate(post.status);
               }}

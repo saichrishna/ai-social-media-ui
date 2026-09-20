@@ -103,7 +103,7 @@ export default function CalendarPage() {
       />
 
       {postsQuery.isLoading ? (
-        <LoadingState label="Loading calendar" />
+        <LoadingState label="Loading calendar" variant="calendar" />
       ) : postsQuery.isError ? (
         <ErrorState
           message={USER_SAFE_ERROR_MESSAGE}

@@ -354,9 +354,10 @@ export function BrandPromisePanel({
       <Button
         type="submit"
         variant="studio"
-        disabled={saveMutation.isPending || !userId}
+        loading={saveMutation.isPending}
+        disabled={!userId}
       >
-        {saveMutation.isPending ? "Saving…" : "Save promise"}
+        Save promise
       </Button>
     </form>
   );

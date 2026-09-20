@@ -33,7 +33,7 @@ export default function BrandDetailPage({
   });
 
   if (query.isLoading) {
-    return <LoadingState label="Loading brand" />;
+    return <LoadingState label="Loading brand" variant="page-header" />;
   }
 
   if (query.isError || !query.data?.brand_profile) {

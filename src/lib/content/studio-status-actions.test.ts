@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isApproveBlockedStatus,
   studioStatusActions,
+  studioStatusGuidance,
 } from "@/lib/content/studio-status-actions";
 
 describe("studioStatusActions", () => {
@@ -31,5 +32,13 @@ describe("studioStatusActions", () => {
     expect(isApproveBlockedStatus("publishing")).toBe(true);
     expect(isApproveBlockedStatus("published")).toBe(true);
     expect(isApproveBlockedStatus("draft")).toBe(false);
+  });
+});
+
+describe("studioStatusGuidance", () => {
+  it("returns guidance for non-action statuses", () => {
+    expect(studioStatusGuidance("scheduled")).toContain("Calendar");
+    expect(studioStatusGuidance("failed")).toContain("failed");
+    expect(studioStatusGuidance("draft")).toBeNull();
   });
 });

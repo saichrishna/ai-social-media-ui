@@ -77,7 +77,9 @@ export default function AccountsPage() {
   }
 
   if (query.isLoading) {
-    return <LoadingState label="Loading social accounts" />;
+    return (
+      <LoadingState label="Loading social accounts" variant="page-header" />
+    );
   }
 
   if (query.isError) {

@@ -71,7 +71,7 @@ export default function DashboardPage() {
       />
 
       {postsQuery.isLoading || brandsLoading ? (
-        <LoadingState label="Loading dashboard" />
+        <LoadingState label="Loading dashboard" variant="dashboard" />
       ) : postsQuery.isError ? (
         <ErrorState
           message={USER_SAFE_ERROR_MESSAGE}

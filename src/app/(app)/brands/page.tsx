@@ -50,7 +50,7 @@ export default function BrandsPage() {
       />
 
       {query.isLoading ? (
-        <LoadingState label="Loading brands" />
+        <LoadingState label="Loading brands" variant="cards" />
       ) : query.isError ? (
         <ErrorState
           message={USER_SAFE_ERROR_MESSAGE}
