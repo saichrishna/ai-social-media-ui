@@ -36,12 +36,19 @@ export type SocialPostsResponse = {
   data: SocialPost[];
 };
 
+export type PostAllowedAction =
+  | "edit"
+  | "regenerate"
+  | "approve"
+  | "schedule";
+
 /** GET /api/social-posts/{id} only — list responses do not include this. */
 export type SocialPostDetailResponse = {
   success: boolean;
   post: SocialPost;
   image_signed_url?: string | null;
   review?: unknown;
+  allowed_actions?: PostAllowedAction[];
 };
 
 export type GenerateSocialContentRequest = {

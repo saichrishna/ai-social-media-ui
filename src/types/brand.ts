@@ -13,12 +13,22 @@ export type BrandProfileRequest = {
   desired_outcome: string;
 };
 
+export type BrandSetupStatus =
+  | "promise_incomplete"
+  | "need_your_words"
+  | "ready_to_draft";
+
 /** Row returned from brand-profile routes (select * plus request fields). */
 export type BrandProfile = BrandProfileRequest & {
   id: string;
   created_at?: string;
   /** Present on GET /user/{user_id} list items. */
   promise_warnings?: string[];
+  /** Present on GET /user/{user_id} when backend setup summary is enabled. */
+  setup_status?: BrandSetupStatus;
+  material_count?: number;
+  promise_complete?: boolean;
+  draft_ready?: boolean;
 };
 
 export type BrandProfileResponse = {

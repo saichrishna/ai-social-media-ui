@@ -71,7 +71,8 @@ export default function BrandsPage() {
               brand.target_audience?.trim().split("\n")[0] ||
               brand.industry ||
               "";
-            const status: BrandSetupStatus = deriveListBrandSetupStatus(brand);
+            const status: BrandSetupStatus =
+              brand.setup_status ?? deriveListBrandSetupStatus(brand);
             return (
               <li key={brand.id}>
                 <Link href={`/brands/${brand.id}`}>

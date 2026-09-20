@@ -36,7 +36,7 @@ import { PageLayout } from "@/components/ux/page-layout";
 import { ReviewCopilot } from "@/components/ux/review-copilot";
 import {
   isApproveBlockedStatus,
-  studioStatusActions,
+  studioStatusActionsFromAllowed,
   studioStatusGuidance,
 } from "@/lib/content/studio-status-actions";
 import { ExpandableText } from "@/components/ux/expandable-text";
@@ -216,7 +216,10 @@ export default function ContentDetailPage({
 
   const signedUrl = envelope.image_signed_url ?? null;
   const review = reviewDisplay(envelope.review ?? studioPost.review);
-  const actions = studioStatusActions(studioPost.status);
+  const actions = studioStatusActionsFromAllowed(
+    envelope?.allowed_actions,
+    studioPost.status,
+  );
   const statusGuidance = studioStatusGuidance(studioPost.status);
   const hashtags = Array.isArray(studioPost.hashtags) ? studioPost.hashtags : [];
   const regenerateMapped = regenerateMutation.data

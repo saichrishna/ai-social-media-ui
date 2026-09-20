@@ -17,6 +17,24 @@ export function isApproveBlockedStatus(
   return status != null && APPROVE_BLOCKED_STATUSES.has(status);
 }
 
+export function studioStatusActionsFromAllowed(
+  allowedActions: readonly string[] | null | undefined,
+  status: string | null | undefined,
+): StudioStatusActions {
+  if (!allowedActions?.length) {
+    return studioStatusActions(status);
+  }
+
+  const hasApprove = allowedActions.includes("approve");
+  const hasSchedule = allowedActions.includes("schedule");
+
+  return {
+    approveVisible: hasApprove,
+    approveAvailable: hasApprove && !isApproveBlockedStatus(status),
+    scheduleVisible: hasSchedule,
+  };
+}
+
 export function studioStatusActions(
   status: string | null | undefined,
 ): StudioStatusActions {

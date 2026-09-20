@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isApproveBlockedStatus,
   studioStatusActions,
+  studioStatusActionsFromAllowed,
   studioStatusGuidance,
 } from "@/lib/content/studio-status-actions";
 
@@ -32,6 +33,17 @@ describe("studioStatusActions", () => {
     expect(isApproveBlockedStatus("publishing")).toBe(true);
     expect(isApproveBlockedStatus("published")).toBe(true);
     expect(isApproveBlockedStatus("draft")).toBe(false);
+  });
+});
+
+describe("studioStatusActionsFromAllowed", () => {
+  it("uses API allowed_actions when present", () => {
+    expect(
+      studioStatusActionsFromAllowed(
+        ["edit", "regenerate", "approve"],
+        "failed",
+      ).approveVisible,
+    ).toBe(true);
   });
 });
 
