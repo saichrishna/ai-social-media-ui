@@ -4,6 +4,7 @@ import { use, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { BrandHome } from "@/components/brands/brand-home";
+import { BrandTypographyProvider } from "@/components/brands/brand-typography-provider";
 import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
 import { getBrandProfile } from "@/lib/api/brands";
@@ -53,10 +54,12 @@ export default function BrandDetailPage({
     [];
 
   return (
-    <BrandHome
-      key={profile.id}
-      profile={profile}
-      promiseWarnings={promiseWarnings}
-    />
+    <BrandTypographyProvider profile={profile}>
+      <BrandHome
+        key={profile.id}
+        profile={profile}
+        promiseWarnings={promiseWarnings}
+      />
+    </BrandTypographyProvider>
   );
 }

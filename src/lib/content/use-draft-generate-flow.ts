@@ -105,7 +105,9 @@ export function useDraftGenerateFlow(options: UseDraftGenerateFlowOptions = {}) 
   }, [brandProfileId, startPollingForPost, userId]);
 
   useEffect(() => {
-    resumePendingIfAny();
+    void Promise.resolve().then(() => {
+      resumePendingIfAny();
+    });
   }, [resumePendingIfAny]);
 
   const resetFlow = useCallback(() => {

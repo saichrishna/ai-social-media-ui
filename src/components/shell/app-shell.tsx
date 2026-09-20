@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-full flex-1">
       <aside
         className={cn(
-          "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col",
+          "hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[var(--shadow-sidebar)] md:flex md:flex-col",
           collapsed ? "w-16" : "w-56",
         )}
       >
@@ -49,8 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-2 border-b border-border px-3 md:px-6">
+      <div className="app-canvas flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 items-center gap-2 border-b border-border/60 bg-[color-mix(in_oklch,var(--app-canvas-base),white_12%)] px-3 backdrop-blur-sm md:px-6">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <Button
               type="button"
@@ -73,7 +73,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Sheet>
           <BrandSelector />
         </header>
-        <div className="flex-1 p-4 md:p-6">{children}</div>
+        <div className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6">{children}</div>
       </div>
     </div>
   );

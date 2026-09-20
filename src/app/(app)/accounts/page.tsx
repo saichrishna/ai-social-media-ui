@@ -6,7 +6,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
 import { Button } from "@/components/ui/button";
+import { SURFACE_PANEL_CARD } from "@/lib/ux/surface-panel-card";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -90,20 +94,23 @@ export default function AccountsPage() {
   const accounts = (query.data?.accounts ?? []).filter(isListedSocialAccount);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Social Accounts</h1>
-        <div className="flex flex-col items-end gap-1">
-          <Button type="button" disabled={!connectEnabled}>
-            + Connect Account
-          </Button>
-          {!connectEnabled ? (
-            <p className="max-w-xs text-right text-xs text-muted-foreground">
-              {CONNECT_UNAVAILABLE_MESSAGE}
-            </p>
-          ) : null}
-        </div>
-      </div>
+    <PageLayout width="studio">
+      <PageHeader
+        title="Social Accounts"
+        description="Optional for now — generate content without connecting."
+        actions={
+          <div className="flex flex-col items-end gap-1">
+            <Button type="button" disabled={!connectEnabled}>
+              + Connect Account
+            </Button>
+            {!connectEnabled ? (
+              <p className="max-w-xs text-right text-xs text-muted-foreground">
+                {CONNECT_UNAVAILABLE_MESSAGE}
+              </p>
+            ) : null}
+          </div>
+        }
+      />
 
       {accounts.length === 0 ? (
         <EmptyState
@@ -116,7 +123,7 @@ export default function AccountsPage() {
             const label = socialAccountDisplayLabel(account);
             return (
               <li key={account.id}>
-                <Card>
+                <Card className={cn(SURFACE_PANEL_CARD)}>
                   <CardHeader>
                     <CardTitle>{platformLabel(account.platform)}</CardTitle>
                   </CardHeader>
@@ -201,6 +208,6 @@ export default function AccountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }

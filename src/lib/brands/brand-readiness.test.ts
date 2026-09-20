@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   countYourWordsMaterial,
   deriveBrandSetupStatus,
+  deriveListBrandSetupStatus,
 } from "@/lib/brands/brand-readiness";
 import type { BrandProfile, InterviewAnswer, VoiceSample } from "@/types/brand";
 
@@ -95,5 +96,15 @@ describe("brand readiness", () => {
     expect(deriveBrandSetupStatus(completePromise, samples, answers)).toBe(
       "ready_to_draft",
     );
+  });
+
+  it("list status never claims ready_to_draft without material counts", () => {
+    expect(deriveListBrandSetupStatus(completePromise)).toBe("need_your_words");
+    expect(
+      deriveListBrandSetupStatus({
+        ...completePromise,
+        target_audience: "",
+      }),
+    ).toBe("promise_incomplete");
   });
 });

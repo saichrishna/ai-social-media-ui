@@ -19,6 +19,9 @@ import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import { buildBrandProfileRequest } from "@/lib/brands/build-brand-request";
 import { useUserId } from "@/lib/auth";
 import { writeBrowserStorage } from "@/lib/storage/browser-storage";
+import { StudioSectionIntro } from "@/components/ux/studio-section-intro";
+import { SURFACE_PANEL_CARD } from "@/lib/ux/surface-panel-card";
+import { cn } from "@/lib/utils";
 
 export function BrandCreateForm() {
   const userId = useUserId();
@@ -27,6 +30,7 @@ export function BrandCreateForm() {
 
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [startMode, setStartMode] = useState<"talk" | "type">("talk");
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -46,7 +50,11 @@ export function BrandCreateForm() {
         response.brand_profile.id,
       );
       toast.success("Brand created");
-      router.push(`/brands/${response.brand_profile.id}`);
+      const suffix =
+        startMode === "talk"
+          ? "tab=words&talk=1"
+          : "tab=promise";
+      router.push(`/brands/${response.brand_profile.id}?${suffix}`);
     },
     onError: () => {
       toast.error(USER_SAFE_ERROR_MESSAGE);
@@ -59,13 +67,15 @@ export function BrandCreateForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto flex max-w-lg flex-col gap-6">
-      <Card>
+    <form onSubmit={onSubmit} className="flex flex-col gap-8">
+      <StudioSectionIntro
+        title="Name your brand"
+        description="Then promise and your words — no long form upfront. Start with talk when you can."
+      />
+      <Card className={cn(SURFACE_PANEL_CARD)}>
         <CardHeader>
-          <CardTitle>Name this brand</CardTitle>
-          <CardDescription>
-            Then fill in your promise and your words. No long form upfront.
-          </CardDescription>
+          <CardTitle className="text-base">Basics</CardTitle>
+          <CardDescription>We refine the rest on the brand journey.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm">
@@ -89,9 +99,27 @@ export function BrandCreateForm() {
           </label>
         </CardContent>
       </Card>
-      <Button type="submit" disabled={createMutation.isPending || !userId}>
-        {createMutation.isPending ? "Creating…" : "Create brand"}
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button
+          type="submit"
+          variant="studio"
+          disabled={createMutation.isPending || !userId}
+          onClick={() => setStartMode("talk")}
+        >
+          {createMutation.isPending ? "Creating…" : "Start with talk"}
+        </Button>
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={createMutation.isPending || !userId}
+          onClick={() => setStartMode("type")}
+        >
+          Type instead
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Both options create the brand and open your promise and words tabs.
+      </p>
     </form>
   );
 }

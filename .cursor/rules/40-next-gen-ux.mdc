@@ -1,0 +1,16 @@
+---
+description: Next-gen UX laws for screens, navigation, and components
+globs: src/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Next-gen UX
+
+Follow `.cursor/skills/next-gen-ux/SKILL.md` and `docs/UX_DESIGN_SYSTEM_REVIEW.md`.
+
+- One primary (studio) CTA per screen; quieter secondary actions.
+- One brand selector (shell header only). P0 baseline locked — see `docs/UX_DESIGN_SYSTEM_REVIEW.md` §22.
+- Keep `AppShell` mounted while page content loads.
+- Human copy only — no models, tokens, or pipeline jargon.
+- Success, error, empty, and dirty-form states are required, not polish.
+- Reuse `PageLayout`, `PageHeader`, `.surface-panel`. Do not add a second design system.

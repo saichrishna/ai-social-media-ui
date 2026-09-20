@@ -21,6 +21,16 @@ export function libraryStatusQueryParam(
   return filter;
 }
 
+export function libraryFilterFromStatusParam(
+  status: string | null,
+): LibraryFilterId {
+  if (!status) {
+    return "all";
+  }
+  const match = LIBRARY_FILTERS.find((item) => item.id === status);
+  return match?.id ?? "all";
+}
+
 export function libraryPostsListPath(
   userId: string,
   filter: LibraryFilterId,

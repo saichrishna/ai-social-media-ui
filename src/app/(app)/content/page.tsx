@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { StatusBadge } from "@/components/content/status-badge";
 import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
+import { FilterPillBar } from "@/components/ux/filter-pill-bar";
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
 import { Button } from "@/components/ui/button";
+import { SURFACE_PANEL_CARD_INTERACTIVE } from "@/lib/ux/surface-panel-card";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -22,6 +27,7 @@ import { useUserId } from "@/lib/auth";
 import { useBrandSelection } from "@/lib/brands/brand-selection-provider";
 import {
   LIBRARY_FILTERS,
+  libraryFilterFromStatusParam,
   libraryStatusQueryParam,
   type LibraryFilterId,
 } from "@/lib/content/library-filters";
@@ -44,9 +50,22 @@ function formatTimestamp(value: string | null | undefined): string | null {
 
 export default function ContentLibraryPage() {
   const userId = useUserId();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { selectedBrandProfileId } = useBrandSelection();
-  const [filter, setFilter] = useState<LibraryFilterId>("all");
+  const filter = libraryFilterFromStatusParam(searchParams.get("status"));
   const statusParam = libraryStatusQueryParam(filter);
+
+  function setFilter(next: LibraryFilterId) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "all") {
+      params.delete("status");
+    } else {
+      params.set("status", next);
+    }
+    const query = params.toString();
+    router.replace(query ? `/content?${query}` : "/content", { scroll: false });
+  }
 
   const postsQuery = useQuery({
     queryKey: ["social-posts", userId, statusParam ?? "all"],
@@ -62,19 +81,18 @@ export default function ContentLibraryPage() {
   const posts = filterPostsByBrandProfileId(allPosts, selectedBrandProfileId);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Content</h1>
-        <Button asChild>
-          <Link href="/create">Create Content</Link>
-        </Button>
-      </div>
+    <PageLayout width="full">
+      <PageHeader
+        title="Content"
+        description="Drafts, reviews, and scheduled posts for your brand."
+        actions={
+          <Button asChild variant="studio">
+            <Link href="/create">Write as me</Link>
+          </Button>
+        }
+      />
 
-      <div
-        role="tablist"
-        aria-label="Filter by status"
-        className="flex flex-wrap gap-2"
-      >
+      <FilterPillBar aria-label="Filter by status">
         {LIBRARY_FILTERS.map((item) => (
           <Button
             key={item.id}
@@ -88,7 +106,7 @@ export default function ContentLibraryPage() {
             {item.label}
           </Button>
         ))}
-      </div>
+      </FilterPillBar>
 
       {postsQuery.isLoading ? (
         <LoadingState label="Loading content" />
@@ -104,10 +122,10 @@ export default function ContentLibraryPage() {
           title={filter === "all" ? "No content yet" : "No matching content"}
           description={
             filter === "all"
-              ? "Create your first AI-powered social post."
-              : "Try a different status filter or create new content."
+              ? "Say a topic on Create — we draft from your promise and words."
+              : "Try a different status filter or write a new post."
           }
-          action={{ href: "/create", label: "Create Content" }}
+          action={{ href: "/create", label: "Write as me" }}
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -118,7 +136,7 @@ export default function ContentLibraryPage() {
           ))}
         </ul>
       )}
-    </div>
+    </PageLayout>
   );
 }
 
@@ -127,7 +145,7 @@ function LibraryItemCard({ post }: { post: SocialPost }) {
   const created = formatTimestamp(post.created_at);
 
   return (
-    <Card className="h-full">
+    <Card className={cn(SURFACE_PANEL_CARD_INTERACTIVE, "h-full overflow-hidden p-0")}>
       <div className="overflow-hidden bg-muted">
         {post.image_signed_url ? (
           // eslint-disable-next-line @next/next/no-img-element

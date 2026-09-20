@@ -9,7 +9,11 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-display);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-panel-hover: var(--shadow-panel-hover);
+  --shadow-panel-lg: var(--shadow-panel-lg);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -54,9 +58,11 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --app-canvas-base: oklch(0.97 0.02 280);
+  --surface-panel: oklch(1 0 0 / 78%);
+  --background: var(--app-canvas-base);
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: oklch(1 0 0 / 85%);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -78,24 +84,45 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: oklch(0.955 0.018 280);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.93 0.025 280);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-border: oklch(0.88 0.04 280 / 45%);
   --sidebar-ring: oklch(0.708 0 0);
   --surface: var(--card);
   --text-muted: var(--muted-foreground);
   --success: oklch(0.627 0.194 149.214);
   --warning: oklch(0.769 0.188 70.08);
   --danger: var(--destructive);
+  --zone-editor-bg: var(--app-canvas-base);
+  --zone-studio-bg: var(--app-canvas-base);
+  --zone-studio-border: oklch(0.85 0.08 280 / 35%);
+  --studio-accent-start: oklch(0.55 0.22 300);
+  --studio-accent-end: oklch(0.65 0.15 220);
+  --shadow-panel:
+    0 1px 2px oklch(0.35 0.06 280 / 8%),
+    0 8px 24px -8px oklch(0.45 0.08 280 / 14%);
+  --shadow-panel-hover:
+    0 2px 4px oklch(0.35 0.06 280 / 10%),
+    0 12px 32px -10px oklch(0.5 0.1 280 / 18%);
+  --shadow-panel-lg:
+    0 4px 8px oklch(0.35 0.06 280 / 10%),
+    0 20px 48px -16px oklch(0.45 0.1 280 / 22%);
+  --shadow-inset-soft: inset 0 1px 2px oklch(0.35 0.04 280 / 6%);
+  --shadow-studio-glow:
+    0 4px 20px -4px oklch(0.55 0.2 300 / 35%),
+    0 0 0 1px oklch(0.65 0.15 220 / 25%);
+  --shadow-sidebar: 4px 0 24px -12px oklch(0.4 0.08 280 / 18%);
 }
 
 .dark,
 [data-theme="dark"] {
-  --background: oklch(0.145 0 0);
+  --app-canvas-base: oklch(0.16 0.03 280);
+  --surface-panel: oklch(0.22 0 0 / 78%);
+  --background: var(--app-canvas-base);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -131,6 +158,158 @@
   --success: oklch(0.765 0.177 163.223);
   --warning: oklch(0.828 0.189 84.429);
   --danger: var(--destructive);
+  --zone-editor-bg: var(--app-canvas-base);
+  --zone-studio-bg: var(--app-canvas-base);
+  --zone-studio-border: oklch(0.55 0.12 280 / 25%);
+  --studio-accent-start: oklch(0.62 0.2 300);
+  --studio-accent-end: oklch(0.68 0.14 220);
+  --shadow-panel:
+    0 1px 2px oklch(0 0 0 / 25%),
+    0 8px 24px -8px oklch(0.2 0.04 280 / 45%);
+  --shadow-panel-hover:
+    0 2px 4px oklch(0 0 0 / 30%),
+    0 12px 32px -10px oklch(0.25 0.06 280 / 50%);
+  --shadow-panel-lg:
+    0 4px 8px oklch(0 0 0 / 35%),
+    0 20px 48px -16px oklch(0.3 0.08 280 / 55%);
+  --shadow-inset-soft: inset 0 1px 2px oklch(0 0 0 / 20%);
+  --shadow-studio-glow:
+    0 4px 24px -4px oklch(0.55 0.18 300 / 45%),
+    0 0 0 1px oklch(0.6 0.12 280 / 35%);
+  --shadow-sidebar: 4px 0 24px -12px oklch(0 0 0 / 45%);
+}
+
+[data-zone="editor"],
+[data-zone="studio"] {
+  padding: 0;
+}
+
+.app-canvas {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 10% 0%,
+      oklch(0.92 0.06 300 / 28%),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 90% 10%,
+      oklch(0.94 0.05 200 / 24%),
+      transparent 50%
+    ),
+    var(--app-canvas-base);
+}
+
+.dark .app-canvas,
+[data-theme="dark"] .app-canvas {
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 10% 0%,
+      oklch(0.35 0.08 300 / 18%),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 90% 10%,
+      oklch(0.32 0.06 220 / 15%),
+      transparent 50%
+    ),
+    var(--app-canvas-base);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-shimmer {
+    background-size: 200% 100%;
+    animation: studio-shimmer 2s linear infinite;
+  }
+}
+
+@keyframes studio-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes voice-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-voice-bar {
+  animation: voice-bar 0.85s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-voice-bar {
+    animation: none;
+  }
+}
+
+.surface-panel,
+.studio-glass {
+  background: var(--surface-panel);
+  border: 1px solid var(--zone-studio-border);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+}
+
+.shadow-panel {
+  box-shadow: var(--shadow-panel);
+}
+
+.shadow-panel-lg {
+  box-shadow: var(--shadow-panel-lg);
+}
+
+.dark .surface-panel,
+.dark .studio-glass,
+[data-theme="dark"] .surface-panel,
+[data-theme="dark"] .studio-glass {
+  background: var(--surface-panel);
+}
+
+.btn-studio {
+  background: linear-gradient(
+    135deg,
+    var(--studio-accent-start),
+    var(--studio-accent-end)
+  );
+  color: oklch(0.985 0 0);
+  border: none;
+}
+
+.btn-studio:hover,
+.btn-studio:focus-visible {
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-studio-glow);
+}
+
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+}
+
+.type-section,
+.type-studio-title {
+  @apply text-lg font-semibold tracking-tight;
+}
+
+[data-brand-typography] .brand-heading,
+[data-brand-typography] h1.brand-heading {
+  font-family: var(--brand-font-heading), var(--font-display), ui-serif, serif;
+}
+
+[data-brand-typography] .brand-body {
+  font-family: var(--brand-font-body), var(--font-sans), system-ui, sans-serif;
 }
 
 @layer base {
@@ -142,5 +321,10 @@
   }
   html {
     @apply font-sans;
+  }
+  h1 {
+    font-family: var(--font-display), ui-serif, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.02em;
   }
 }

@@ -450,6 +450,14 @@ Imagine **Promise tab + Your words tab** on the brand they already create. Draft
 - 27 assets from one bland idea
 - Jargon that sounds strategic and means nothing
 
+## Typography (inferred, not asked)
+
+We do **not** ask “which font do you like?” in the interview. The UI derives a **typography preset** from promise fields (`industry`, `brand_voice`, `target_audience`, etc.) — e.g. luxury → Cormorant + DM Sans, tech → Sora + Inter, default → Instrument Serif + Geist.
+
+Implementation: [`derive-brand-typography.ts`](../src/lib/brands/derive-brand-typography.ts) + [`BrandTypographyProvider`](../src/components/brands/brand-typography-provider.tsx) on the brand detail route. Previews (device frame headline) use the brand heading font when scoped.
+
+Future: optional persisted `typography_preset` on `brand_profiles` to override inference.
+
 ## What this means for the existing app (kept short)
 
 The app already has users, brands, social accounts, and generate-per-platform. The **product hole** is not more platforms. It is: brands are still a slogan (`brand_voice`), not a studied expert; channels are accounts, not placement; generation does not yet start from the user’s corpus.

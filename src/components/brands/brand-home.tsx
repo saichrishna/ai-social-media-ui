@@ -1,15 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { BrandDangerZone } from "@/components/brands/brand-danger-zone";
 import { BrandDraftLockedPanel } from "@/components/brands/brand-draft-locked-panel";
 import { BrandDraftPanel } from "@/components/brands/brand-draft-panel";
-import { BrandProgressStrip } from "@/components/brands/brand-progress-strip";
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
+import { cn } from "@/lib/utils";
 import { BrandPromisePanel } from "@/components/brands/brand-promise-panel";
 import { BrandYourWordsPanel } from "@/components/brands/brand-your-words-panel";
-import { Button } from "@/components/ui/button";
 import {
   Tabs,
   TabsContent,
@@ -22,8 +24,10 @@ import {
   getVoiceSamples,
 } from "@/lib/api/brands";
 import {
-  brandSetupStatusLabel,
+  brandTabStatusDescription,
+  countYourWordsMaterial,
   deriveBrandSetupStatus,
+  type BrandHomeTab,
 } from "@/lib/brands/brand-readiness";
 import { useUserId } from "@/lib/auth";
 import type { BrandProfile } from "@/types/brand";
@@ -37,6 +41,7 @@ export function BrandHome({
 }) {
   const userId = useUserId();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
   const samplesQuery = useQuery({
@@ -72,35 +77,53 @@ export function BrandHome({
     },
   });
 
-  function onDelete() {
-    const confirmed = window.confirm(
-      `Delete ${profile.business_name}? This cannot be undone.`,
-    );
-    if (confirmed) {
-      deleteMutation.mutate();
-    }
+  function onConfirmDelete() {
+    deleteMutation.mutate();
   }
-
-  const activeStripStep =
-    setupStatus === "ready_to_draft" ? "Draft" : setupStatus === "need_your_words" ? "Words" : "Promise";
 
   const draftReady = setupStatus === "ready_to_draft";
   const defaultTab = draftReady ? "draft" : "promise";
+  const tabParam = searchParams.get("tab");
+  const activeTab: BrandHomeTab =
+    tabParam === "words" || tabParam === "promise" || tabParam === "draft"
+      ? tabParam === "draft" && !draftReady
+        ? defaultTab
+        : tabParam
+      : defaultTab;
+
+  const materialCount = countYourWordsMaterial(
+    samplesQuery.data?.voice_samples ?? [],
+    answersQuery.data?.interview_answers ?? [],
+  );
+
+  function onTabChange(value: string) {
+    const tab = value as BrandHomeTab;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    params.delete("talk");
+    router.replace(`/brands/${profile.id}?${params.toString()}`, {
+      scroll: false,
+    });
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{profile.business_name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {brandSetupStatusLabel(setupStatus)}
-          </p>
-        </div>
-        <BrandProgressStrip activeStep={activeStripStep} />
-      </div>
+    <PageLayout width="studio">
+      <PageHeader
+        title={profile.business_name}
+        titleClassName="brand-heading"
+        description={brandTabStatusDescription(
+          activeTab,
+          setupStatus,
+          materialCount,
+        )}
+      />
 
-      <Tabs defaultValue={defaultTab} className="gap-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-4">
+        <TabsList
+          className={cn(
+            "surface-panel h-auto w-full justify-start gap-1 bg-transparent p-1 ring-0",
+          )}
+        >
           <TabsTrigger value="promise">Promise</TabsTrigger>
           <TabsTrigger value="words">Your words</TabsTrigger>
           <TabsTrigger value="draft" disabled={!draftReady}>
@@ -120,22 +143,16 @@ export function BrandHome({
           {draftReady ? (
             <BrandDraftPanel profile={profile} />
           ) : (
-            <BrandDraftLockedPanel />
+            <BrandDraftLockedPanel profileId={profile.id} />
           )}
         </TabsContent>
       </Tabs>
 
-      <div className="mx-auto w-full max-w-2xl border-t pt-4">
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          disabled={deleteMutation.isPending}
-          onClick={onDelete}
-        >
-          Delete brand
-        </Button>
-      </div>
-    </div>
+      <BrandDangerZone
+        brandName={profile.business_name}
+        onConfirmDelete={onConfirmDelete}
+        isDeleting={deleteMutation.isPending}
+      />
+    </PageLayout>
   );
 }

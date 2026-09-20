@@ -17,16 +17,16 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-start gap-3 rounded-xl border border-dashed border-border bg-surface p-6",
+        "surface-panel flex flex-col items-start gap-4 p-6 ring-0",
         className,
       )}
     >
-      <h2 className="text-lg font-medium">{title}</h2>
+      <h2 className="font-display text-xl font-medium">{title}</h2>
       {description ? (
         <p className="text-sm text-muted-foreground">{description}</p>
       ) : null}
       {action ? (
-        <Button asChild>
+        <Button asChild variant="studio">
           <Link href={action.href}>{action.label}</Link>
         </Button>
       ) : null}

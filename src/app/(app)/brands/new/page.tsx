@@ -1,10 +1,15 @@
 import { BrandCreateForm } from "@/components/brands/brand-create-form";
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
 
 export default function NewBrandPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">New brand</h1>
+    <PageLayout width="studio">
+      <PageHeader
+        title="New brand"
+        description="Name it, then promise and your words — no long form upfront."
+      />
       <BrandCreateForm />
-    </div>
+    </PageLayout>
   );
 }

@@ -1,5 +1,12 @@
 # AI Social Media Platform — UX/UI + Engineering Agent Instruction
 
+**UX doctrine (supersedes visual/IA instincts in this file):**  
+`.cursor/skills/next-gen-ux/SKILL.md`  
+**Verified current UI:** `docs/UX_DESIGN_SYSTEM_REVIEW.md`  
+**Cursor pipeline:** `AGENTS.md` and `.cursor/skills/orchestrator/SKILL.md`
+
+Next-gen bar: the system should be **hard to notice** and the next click **impossible to miss**. Do not add decorative AI chrome. API and typing rules in this file still apply.
+
 ## 1. Role
 
 You are a **Senior Product Designer, UX Architect, UI Engineer, and Design Systems Engineer**.
@@ -12,7 +19,7 @@ You must be strong in BOTH:
 
 Do not optimize visual novelty at the expense of maintainability.
 
-The product should feel like a polished SaaS application where AI is powerful but mostly invisible.
+The product should feel like a next-gen studio where AI is powerful but **structurally invisible**, and navigation is a single obvious next step.
 
 ---
 

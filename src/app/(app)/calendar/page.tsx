@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
-import { BrandSelector } from "@/components/brands/brand-selector";
+import { PageLayout } from "@/components/ux/page-layout";
 import { StatusBadge } from "@/components/content/status-badge";
 import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
+import { PageHeader } from "@/components/ux/page-header";
 import { Button } from "@/components/ui/button";
 import { getUserSocialPosts } from "@/lib/api/posts";
 import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
@@ -70,13 +71,12 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold">Calendar</h1>
-          <BrandSelector />
-        </div>
-        <div className="flex items-center gap-2">
+    <PageLayout width="full">
+      <PageHeader
+        title="Calendar"
+        description="Scheduled posts for the selected brand."
+        actions={
+          <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
@@ -98,8 +98,9 @@ export default function CalendarPage() {
           >
             <ChevronRightIcon />
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {postsQuery.isLoading ? (
         <LoadingState label="Loading calendar" />
@@ -116,14 +117,14 @@ export default function CalendarPage() {
             <EmptyState
               title="No scheduled posts this month"
               description="Approved posts can be scheduled from Content Studio."
-              action={{ href: "/", label: "Go to Content Studio" }}
+              action={{ href: "/content", label: "Open content library" }}
             />
           ) : null}
           <div className="overflow-x-auto">
             <div
               role="grid"
               aria-label={`Month calendar ${monthLabel(year, monthIndex)}`}
-              className="grid min-w-[40rem] grid-cols-7 gap-px rounded-xl border border-border bg-border"
+              className="surface-panel grid min-w-[40rem] grid-cols-7 gap-px overflow-hidden bg-[color:var(--zone-studio-border)] p-0 ring-0"
             >
               {WEEKDAYS.map((day) => (
                 <div
@@ -176,6 +177,6 @@ export default function CalendarPage() {
           </div>
         </>
       )}
-    </div>
+    </PageLayout>
   );
 }

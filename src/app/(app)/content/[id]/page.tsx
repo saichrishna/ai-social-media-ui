@@ -1,8 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/content/status-badge";
 import { ErrorState } from "@/components/states/error-state";
@@ -29,10 +30,15 @@ import { ApiError, USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import { track } from "@/lib/analytics";
 import { mapGenerateSocialContentResult } from "@/lib/content/map-generate-result";
 import { reviewDisplay } from "@/lib/content/review-display";
+import { DevicePreview } from "@/components/ux/device-preview";
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
+import { ReviewCopilot } from "@/components/ux/review-copilot";
 import {
   isApproveBlockedStatus,
   studioStatusActions,
 } from "@/lib/content/studio-status-actions";
+import { useUnsavedChangesGuard } from "@/lib/ux/use-unsaved-changes-guard";
 import type { SocialPost } from "@/types/post";
 
 const SAVE_FAILURE_TITLE = "We couldn't save your changes.";
@@ -58,6 +64,19 @@ function formFromPost(post: SocialPost) {
   };
 }
 
+function formsEqual(
+  a: ReturnType<typeof formFromPost>,
+  b: ReturnType<typeof formFromPost>,
+): boolean {
+  return (
+    a.headline === b.headline &&
+    a.caption === b.caption &&
+    a.hashtags === b.hashtags &&
+    a.callToAction === b.callToAction &&
+    a.imagePrompt === b.imagePrompt
+  );
+}
+
 export default function ContentDetailPage({
   params,
 }: {
@@ -76,6 +95,7 @@ export default function ContentDetailPage({
   const [approveOpen, setApproveOpen] = useState(false);
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ["social-post", id],
@@ -102,6 +122,7 @@ export default function ContentDetailPage({
         return;
       }
       setEditing(false);
+      toast.success("Changes saved");
       await refetchStudio();
     },
   });
@@ -118,6 +139,7 @@ export default function ContentDetailPage({
         return;
       }
       setApproveOpen(false);
+      toast.success("Post approved");
       await refetchStudio();
     },
   });
@@ -137,8 +159,25 @@ export default function ContentDetailPage({
     },
   });
 
+  const envelope = query.data;
+  const post = envelope?.post;
+
+  const baselineForm = useMemo(
+    () => (post ? formFromPost(post) : null),
+    [post],
+  );
+  const isDirty =
+    editing &&
+    baselineForm !== null &&
+    !formsEqual(form, baselineForm);
+  useUnsavedChangesGuard(isDirty);
+
   if (query.isLoading) {
-    return <LoadingState label="Loading content" />;
+    return (
+      <PageLayout width="studio">
+        <LoadingState label="Loading content" />
+      </PageLayout>
+    );
   }
 
   if (query.isError) {
@@ -146,32 +185,37 @@ export default function ContentDetailPage({
       query.error instanceof ApiError ? query.error.status : undefined;
     if (status === 404) {
       return (
-        <ErrorState message="We couldn't find this post." />
+        <PageLayout width="studio">
+          <ErrorState message="We couldn't find this post." />
+        </PageLayout>
       );
     }
     return (
-      <ErrorState
-        message={USER_SAFE_ERROR_MESSAGE}
-        onRetry={() => {
-          void query.refetch();
-        }}
-      />
+      <PageLayout width="studio">
+        <ErrorState
+          message={USER_SAFE_ERROR_MESSAGE}
+          onRetry={() => {
+            void query.refetch();
+          }}
+        />
+      </PageLayout>
     );
   }
 
-  const envelope = query.data;
-  const post = envelope?.post;
   if (!envelope?.success || !post) {
     return (
-      <ErrorState message="We couldn't find this post." />
+      <PageLayout width="studio">
+        <ErrorState message="We couldn't find this post." />
+      </PageLayout>
     );
   }
-  const loadedPost = post;
+
+  const studioPost = post;
 
   const signedUrl = envelope.image_signed_url ?? null;
-  const review = reviewDisplay(envelope.review ?? post.review);
-  const actions = studioStatusActions(post.status);
-  const hashtags = Array.isArray(post.hashtags) ? post.hashtags : [];
+  const review = reviewDisplay(envelope.review ?? studioPost.review);
+  const actions = studioStatusActions(studioPost.status);
+  const hashtags = Array.isArray(studioPost.hashtags) ? studioPost.hashtags : [];
   const regenerateMapped = regenerateMutation.data
     ? mapGenerateSocialContentResult(regenerateMutation.data)
     : null;
@@ -186,21 +230,32 @@ export default function ContentDetailPage({
     (approveMutation.data !== undefined && !approveMutation.data.success);
 
   function startEdit() {
-    setForm(formFromPost(loadedPost));
+    setForm(formFromPost(studioPost));
     saveMutation.reset();
     setEditing(true);
   }
 
   function cancelEdit() {
-    setForm(formFromPost(loadedPost));
+    if (isDirty) {
+      setDiscardOpen(true);
+      return;
+    }
+    setForm(formFromPost(studioPost));
     saveMutation.reset();
     setEditing(false);
+  }
+
+  function confirmDiscardEdit() {
+    setForm(formFromPost(studioPost));
+    saveMutation.reset();
+    setEditing(false);
+    setDiscardOpen(false);
   }
 
   if (regenerateMutation.isPending) {
     return (
       <div
-        className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-6"
+        className="surface-panel flex flex-col gap-2 p-6"
         role="status"
         aria-live="polite"
       >
@@ -211,18 +266,21 @@ export default function ContentDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/">← Content Studio</Link>
+    <PageLayout width="studio">
+      <PageHeader
+        title={post.headline?.trim() || "Content studio"}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            {post.platform ? <span>{post.platform}</span> : null}
+            {post.status ? <StatusBadge status={post.status} /> : null}
+          </span>
+        }
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/content">← Library</Link>
           </Button>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {post.status ? <StatusBadge status={post.status} /> : null}
-          {post.platform ? <span>{post.platform}</span> : null}
-        </div>
-      </div>
+        }
+      />
 
       {saveFailed ? (
         <ErrorState
@@ -255,30 +313,18 @@ export default function ContentDetailPage({
         />
       ) : null}
 
-      {post.status === "approved" ? (
-        <p className="text-sm">Post approved</p>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-border bg-muted">
-          {signedUrl ? (
-            // Signed URL from GET detail only — never use image_url as src.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={signedUrl}
-              alt={post.headline || "Generated post image"}
-              className="aspect-square w-full object-cover"
-            />
-          ) : (
-            <div className="flex aspect-square items-center justify-center text-sm text-muted-foreground">
-              No image yet
-            </div>
-          )}
+      <div className="grid gap-6 xl:grid-cols-[minmax(280px,360px)_1fr_minmax(260px,320px)] xl:items-start">
+        <div className="surface-panel p-4 xl:sticky xl:top-6">
+          <DevicePreview
+            platform={post.platform}
+            imageUrl={signedUrl}
+            headline={post.headline}
+          />
         </div>
 
         {editing ? (
           <form
-            className="flex flex-col gap-4"
+            className="surface-panel flex flex-col gap-4 p-5"
             onSubmit={(event) => {
               event.preventDefault();
               saveMutation.mutate();
@@ -333,7 +379,10 @@ export default function ContentDetailPage({
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              Image Prompt
+              Direction for the image
+              <span className="text-xs font-normal text-muted-foreground">
+                Plain language — what should the picture show?
+              </span>
               <Textarea
                 value={form.imagePrompt}
                 onChange={(event) =>
@@ -359,54 +408,26 @@ export default function ContentDetailPage({
             </div>
           </form>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="surface-panel flex flex-col gap-4 p-5">
+            <h2 className="text-lg font-semibold tracking-tight">Caption</h2>
             <Field label="Headline" value={post.headline} />
             <Field label="Caption" value={post.caption} />
             <div>
-              <h2 className="text-sm font-medium text-muted-foreground">Hashtags</h2>
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Hashtags
+              </h3>
               <p className="mt-1 whitespace-pre-wrap">
                 {hashtags.length > 0 ? hashtags.join(" ") : "—"}
               </p>
             </div>
             <Field label="Call to action" value={post.call_to_action} />
-            <Field label="Image prompt" value={post.image_prompt} />
-            <div>
-              <h2 className="text-sm font-medium text-muted-foreground">Platform</h2>
-              <p className="mt-1">{post.platform || "—"}</p>
-            </div>
-            <div>
-              <h2 className="text-sm font-medium text-muted-foreground">Status</h2>
-              <p className="mt-1">{post.status || "—"}</p>
-            </div>
           </div>
         )}
-      </div>
 
-      {review ? (
-        <section className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
-          <h2 className="font-medium text-foreground">AI review</h2>
-          {review.approved !== undefined ? (
-            <p className="mt-2">
-              {review.approved ? "Approved by review" : "Not approved by review"}
-            </p>
-          ) : null}
-          {review.reason ? <p className="mt-2">{review.reason}</p> : null}
-          {review.issues.length > 0 ? (
-            <ul className="mt-2 list-disc pl-5">
-              {review.issues.map((issue) => (
-                <li key={issue}>{issue}</li>
-              ))}
-            </ul>
-          ) : null}
-          {review.suggestions.length > 0 ? (
-            <ul className="mt-2 list-disc pl-5">
-              {review.suggestions.map((suggestion) => (
-                <li key={suggestion}>{suggestion}</li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
-      ) : null}
+        {review && !editing ? (
+          <ReviewCopilot review={review} className="xl:row-span-2" />
+        ) : null}
+      </div>
 
       {!editing ? (
         <div className="flex flex-wrap gap-2">
@@ -426,6 +447,7 @@ export default function ContentDetailPage({
           {actions.approveVisible ? (
             <Button
               type="button"
+              variant="studio"
               disabled={
                 !actions.approveAvailable || isApproveBlockedStatus(post.status)
               }
@@ -440,6 +462,7 @@ export default function ContentDetailPage({
           {actions.scheduleVisible ? (
             <Button
               type="button"
+              variant="studio"
               onClick={() => {
                 track("schedule_opened", { post_id: id });
                 setScheduleOpen(true);
@@ -469,6 +492,7 @@ export default function ContentDetailPage({
             </Button>
             <Button
               type="button"
+              variant="studio"
               disabled={
                 approveMutation.isPending ||
                 isApproveBlockedStatus(post.status)
@@ -491,6 +515,29 @@ export default function ContentDetailPage({
           post={post}
         />
       ) : null}
+
+      <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+            <DialogDescription>
+              Your edits to this post will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDiscardOpen(false)}
+            >
+              Keep editing
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDiscardEdit}>
+              Discard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={regenerateOpen} onOpenChange={setRegenerateOpen}>
         <DialogContent>
@@ -521,7 +568,7 @@ export default function ContentDetailPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }
 

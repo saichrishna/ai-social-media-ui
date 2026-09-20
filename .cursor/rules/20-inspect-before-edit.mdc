@@ -1,0 +1,11 @@
+---
+description: Inspect existing code before changing it
+alwaysApply: true
+---
+
+# Inspect before edit
+
+- Inspect relevant files before modifying them. Do not guess when the repo can be read.
+- Preserve existing architecture unless an approved plan documents why it must change.
+- Keep diffs focused and minimal. Do not drive-by refactor.
+- Unused brand-form / interview panels are not the current product UX unless the plan reintroduces them.

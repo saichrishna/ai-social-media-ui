@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -18,6 +19,11 @@ import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import { buildBrandProfileRequest } from "@/lib/brands/build-brand-request";
 import { useUserId } from "@/lib/auth";
 import type { BrandProfile } from "@/types/brand";
+import { StudioSectionIntro } from "@/components/ux/studio-section-intro";
+import { SURFACE_PANEL_CARD } from "@/lib/ux/surface-panel-card";
+import { promiseIsComplete } from "@/lib/brands/brand-readiness";
+import { useUnsavedChangesGuard } from "@/lib/ux/use-unsaved-changes-guard";
+import { cn } from "@/lib/utils";
 
 function linesToList(value: string): string[] {
   return value
@@ -60,6 +66,40 @@ export function BrandPromisePanel({
   const [instructions, setInstructions] = useState(
     profile.additional_instructions,
   );
+  const [fieldErrors, setFieldErrors] = useState<{
+    targetAudience?: string;
+    notFor?: string;
+  }>({});
+
+  const isDirty = useMemo(() => {
+    return (
+      businessName !== profile.business_name ||
+      targetAudience !== profile.target_audience ||
+      services !== listToLines(profile.services) ||
+      notFor !== (profile.not_for ?? "") ||
+      forbidden !== listToLines(profile.forbidden_topics) ||
+      desiredOutcome !== (profile.desired_outcome ?? "") ||
+      industry !== profile.industry ||
+      location !== profile.location ||
+      brandVoice !== profile.brand_voice ||
+      hashtags !== listToLines(profile.preferred_hashtags) ||
+      instructions !== profile.additional_instructions
+    );
+  }, [
+    brandVoice,
+    businessName,
+    desiredOutcome,
+    forbidden,
+    hashtags,
+    industry,
+    instructions,
+    location,
+    notFor,
+    profile,
+    services,
+    targetAudience,
+  ]);
+  useUnsavedChangesGuard(isDirty);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -95,6 +135,17 @@ export function BrandPromisePanel({
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
+    const nextErrors: { targetAudience?: string; notFor?: string } = {};
+    if (!targetAudience.trim()) {
+      nextErrors.targetAudience = "Tell us who you help.";
+    }
+    if (!notFor.trim()) {
+      nextErrors.notFor = "Tell us who you are not for.";
+    }
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
     saveMutation.mutate();
   }
 
@@ -103,22 +154,53 @@ export function BrandPromisePanel({
     (promiseWarnings.includes("not_for is empty") ||
       promiseWarnings.length === 0);
 
+  const promiseComplete = promiseIsComplete({
+    ...profile,
+    promise_warnings: promiseWarnings,
+    business_name: businessName,
+    target_audience: targetAudience,
+    not_for: notFor,
+  } as typeof profile);
+
   return (
-    <form onSubmit={onSubmit} className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div>
-        <h2 className="text-lg font-medium">Who is this for?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tell us who you help. We use this before we write anything as you.
-        </p>
+    <form onSubmit={onSubmit} className="flex flex-col gap-8">
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+        <StudioSectionIntro
+          title="Who is this for?"
+          titleClassName="brand-heading"
+          description="Tell us who you help and who you refuse. We use this before we write anything as you."
+        >
+          {promiseWarnings.length > 0 ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              A few fields are still empty. You can save and come back.
+            </p>
+          ) : null}
+        </StudioSectionIntro>
+        {promiseComplete ? (
+          <div className="surface-panel flex flex-col gap-3 p-5 ring-0">
+            <p className="text-sm font-medium">Promise looks complete</p>
+            <p className="text-sm text-muted-foreground">
+              Next: capture your words in a talk session or paste real captions.
+            </p>
+            <Button asChild variant="studio" size="sm" className="w-fit">
+              <Link
+                href={`/brands/${encodeURIComponent(profile.id)}?tab=words&talk=1`}
+              >
+                Begin talk session
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="surface-panel p-5 ring-0">
+            <p className="text-sm text-muted-foreground">
+              &ldquo;Who you are not for&rdquo; is as important as who you help
+              — it keeps drafts from sounding like everyone in your industry.
+            </p>
+          </div>
+        )}
       </div>
 
-      {promiseWarnings.length > 0 ? (
-        <p className="text-sm text-muted-foreground" role="status">
-          A few promise fields are still empty. You can save and come back.
-        </p>
-      ) : null}
-
-      <Card>
+      <Card className={cn(SURFACE_PANEL_CARD)}>
         <CardHeader>
           <CardTitle className="text-base">Promise</CardTitle>
         </CardHeader>
@@ -138,8 +220,22 @@ export function BrandPromisePanel({
             </span>
             <Textarea
               value={targetAudience}
-              onChange={(event) => setTargetAudience(event.target.value)}
+              onChange={(event) => {
+                setTargetAudience(event.target.value);
+                if (fieldErrors.targetAudience) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    targetAudience: undefined,
+                  }));
+                }
+              }}
+              aria-invalid={Boolean(fieldErrors.targetAudience)}
             />
+            {fieldErrors.targetAudience ? (
+              <span className="text-xs text-destructive">
+                {fieldErrors.targetAudience}
+              </span>
+            ) : null}
           </label>
           <label className="flex flex-col gap-1 text-sm">
             What you actually do
@@ -159,8 +255,20 @@ export function BrandPromisePanel({
             </span>
             <Textarea
               value={notFor}
-              onChange={(event) => setNotFor(event.target.value)}
+              onChange={(event) => {
+                setNotFor(event.target.value);
+                if (fieldErrors.notFor) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    notFor: undefined,
+                  }));
+                }
+              }}
+              aria-invalid={Boolean(fieldErrors.notFor)}
             />
+            {fieldErrors.notFor ? (
+              <span className="text-xs text-destructive">{fieldErrors.notFor}</span>
+            ) : null}
           </label>
           {showNotForNote ? (
             <p className="text-xs text-muted-foreground">
@@ -189,7 +297,7 @@ export function BrandPromisePanel({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={cn(SURFACE_PANEL_CARD)}>
         <CardHeader className="pb-2">
           <button
             type="button"
@@ -243,7 +351,11 @@ export function BrandPromisePanel({
         ) : null}
       </Card>
 
-      <Button type="submit" disabled={saveMutation.isPending || !userId}>
+      <Button
+        type="submit"
+        variant="studio"
+        disabled={saveMutation.isPending || !userId}
+      >
         {saveMutation.isPending ? "Saving…" : "Save promise"}
       </Button>
     </form>

@@ -124,11 +124,26 @@ export function SchedulePostDialog({
   const scheduleFailed =
     mutation.isError || (mutation.data !== undefined && !mutation.data.success);
   const successCopy = formatScheduleSuccess(date, time);
+  const [pastError, setPastError] = useState(false);
+
+  function scheduleIsInPast(): boolean {
+    if (!date || !time) {
+      return false;
+    }
+    try {
+      const scheduledAtMs = Date.parse(buildScheduleDateTimeIso(date, time));
+      return !Number.isNaN(scheduledAtMs) && scheduledAtMs < Date.now();
+    } catch {
+      return false;
+    }
+  }
+
   const canSubmit = Boolean(date && time && timezone && !mutation.isPending);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
       setScheduled(false);
+      setPastError(false);
       mutation.reset();
     }
     onOpenChange(next);
@@ -181,7 +196,10 @@ export function SchedulePostDialog({
                 <Input
                   type="date"
                   value={date}
-                  onChange={(event) => setDate(event.target.value)}
+                  onChange={(event) => {
+                    setDate(event.target.value);
+                    setPastError(false);
+                  }}
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -189,16 +207,27 @@ export function SchedulePostDialog({
                 <Input
                   type="time"
                   value={time}
-                  onChange={(event) => setTime(event.target.value)}
+                  onChange={(event) => {
+                    setTime(event.target.value);
+                    setPastError(false);
+                  }}
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 Timezone
+                <span className="text-xs font-normal text-muted-foreground">
+                  Used with date and time above (IANA name, e.g. America/New_York)
+                </span>
                 <Input
                   value={timezone}
                   onChange={(event) => setTimezone(event.target.value)}
                 />
               </label>
+              {pastError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  Pick a date and time in the future.
+                </p>
+              ) : null}
             </div>
             <DialogFooter>
               <Button
@@ -213,6 +242,11 @@ export function SchedulePostDialog({
                 type="button"
                 disabled={!canSubmit}
                 onClick={() => {
+                  if (scheduleIsInPast()) {
+                    setPastError(true);
+                    return;
+                  }
+                  setPastError(false);
                   mutation.mutate();
                 }}
               >

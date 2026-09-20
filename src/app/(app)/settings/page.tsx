@@ -3,8 +3,12 @@
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 
+import { PageHeader } from "@/components/ux/page-header";
+import { PageLayout } from "@/components/ux/page-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SURFACE_PANEL_CARD } from "@/lib/ux/surface-panel-card";
+import { cn } from "@/lib/utils";
 import { useUser } from "@/lib/auth";
 
 function useIsClient() {
@@ -22,9 +26,9 @@ export default function SettingsPage() {
   const isDark = isClient && theme === "dark";
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
-      <Card>
+    <PageLayout width="narrow">
+      <PageHeader title="Settings" />
+      <Card className={cn(SURFACE_PANEL_CARD)}>
         <CardHeader>
           <CardTitle>Account</CardTitle>
         </CardHeader>
@@ -41,7 +45,7 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className={cn(SURFACE_PANEL_CARD)}>
         <CardHeader>
           <CardTitle>Theme</CardTitle>
         </CardHeader>
@@ -56,6 +60,6 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

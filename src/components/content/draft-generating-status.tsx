@@ -1,24 +1,33 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import {
+  GeneratePipeline,
+  type PipelineStepId,
+} from "@/components/ux/generate-pipeline";
 
 type DraftGeneratingStatusProps = {
   phase: "drafting" | "still_generating" | "poll_exhausted";
+  pipelineStep?: PipelineStepId;
 };
 
-export function DraftGeneratingStatus({ phase }: DraftGeneratingStatusProps) {
+export function DraftGeneratingStatus({
+  phase,
+  pipelineStep = "write",
+}: DraftGeneratingStatusProps) {
   if (phase === "drafting") {
     return (
       <div
-        className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-6"
+        className="surface-panel mx-auto flex max-w-lg flex-col gap-4 p-6"
         role="status"
         aria-live="polite"
       >
         <p className="text-base font-medium">Creating your draft…</p>
         <p className="text-sm text-muted-foreground">
-          Grounded in your promise and Your words. Ollama and image generation
-          can take several minutes — stay on this page.
+          Grounded in your promise and Your words. This can take several
+          minutes — stay on this page.
         </p>
+        <GeneratePipeline activeStep={pipelineStep} />
       </div>
     );
   }
@@ -26,22 +35,22 @@ export function DraftGeneratingStatus({ phase }: DraftGeneratingStatusProps) {
   if (phase === "still_generating") {
     return (
       <div
-        className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6"
+        className="surface-panel mx-auto flex max-w-lg flex-col gap-4 p-6"
         role="status"
         aria-live="polite"
       >
         <p className="text-base font-medium">Still generating on the server</p>
         <p className="text-sm text-muted-foreground">
-          The request timed out in the browser, but your draft may still be
-          finishing in the background. We&apos;re checking for the new post every
-          few seconds and will open it when it&apos;s ready.
+          The browser gave up waiting, but your draft may still be finishing.
+          We check every few seconds and open your post when it appears.
         </p>
+        <GeneratePipeline activeStep="review" />
         <p className="text-sm text-muted-foreground">
-          You can also open{" "}
+          Or open{" "}
           <Link href="/content" className="underline underline-offset-2">
             Content Studio
           </Link>{" "}
-          — if a post appears there, open it to review caption and AI feedback.
+          to review caption and feedback there.
         </p>
       </div>
     );
@@ -49,7 +58,7 @@ export function DraftGeneratingStatus({ phase }: DraftGeneratingStatusProps) {
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-6"
+      className="surface-panel mx-auto flex max-w-lg flex-col gap-3 p-6"
       role="status"
       aria-live="polite"
     >

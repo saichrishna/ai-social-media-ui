@@ -4,15 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+  TalkSessionView,
+  type TalkPhase,
+} from "@/components/brands/talk-session/talk-session-view";
 import {
   completeInterviewSession,
   getActiveInterviewSession,
@@ -51,8 +46,10 @@ function backendOriginForSidecar(): string {
 
 export function BrandInterviewTalkPanel({
   profile,
+  onExit,
 }: {
   profile: BrandProfile;
+  onExit: () => void;
 }) {
   const userId = useUserId();
   const queryClient = useQueryClient();
@@ -120,6 +117,14 @@ export function BrandInterviewTalkPanel({
     !isSavingStep &&
     voiceDraft.trim().length > 0;
 
+  const phase: TalkPhase = reviewSession
+    ? "review"
+    : isLive
+      ? "live"
+      : sessionReady
+        ? "prep"
+        : "lobby";
+
   const startMutation = useMutation({
     mutationFn: async (options?: { forceNew?: boolean }) => {
       if (!userId) {
@@ -147,15 +152,16 @@ export function BrandInterviewTalkPanel({
         ?.trim();
       if (data.resumed && opened && opened !== coldOpen.trim()) {
         toast.message(
-          "We resumed your earlier sitting — the prep below matches that cold open, not what you just typed.",
+          "We resumed your earlier sitting — prep matches that earlier cold open.",
         );
       } else {
-        toast.success("Session ready — you can start talking");
+        toast.success("Session ready — connect when you want to talk");
       }
+      setTalkStatus("When you're ready, start talking or type your answer.");
     },
     onError: () => {
       toast.error(
-        "Could not prepare questions. If Ollama is running, wait a minute and try again.",
+        "Could not prepare questions. Wait a minute and try again.",
       );
     },
   });
@@ -167,6 +173,11 @@ export function BrandInterviewTalkPanel({
     await queryClient.invalidateQueries({
       queryKey: ["brand-interview-answers", profileId],
     });
+  }
+
+  function handleExit() {
+    disconnect();
+    onExit();
   }
 
   function openReview(liveSession: InterviewSession) {
@@ -183,7 +194,7 @@ export function BrandInterviewTalkPanel({
     setCurrentQuestion("");
     setVoiceDraft("");
     disconnect();
-    setTalkStatus("Review each answer — fix names and typos, then finish.");
+    setTalkStatus(null);
   }
 
   async function finishReview() {
@@ -225,7 +236,9 @@ export function BrandInterviewTalkPanel({
         transcriptParts.push(cold);
       }
       for (const q of latest.questions ?? []) {
-        const ans = normalizeVoiceTranscript(reviewDrafts[q.question_key] ?? q.answer_text ?? "");
+        const ans = normalizeVoiceTranscript(
+          reviewDrafts[q.question_key] ?? q.answer_text ?? "",
+        );
         if (!ans) {
           continue;
         }
@@ -242,9 +255,10 @@ export function BrandInterviewTalkPanel({
       setReviewSession(null);
       setReviewDrafts({});
       setSession(null);
-      setTalkStatus("Saved.");
+      disconnect();
       await refreshSavedWords();
-      toast.success("Saved to Your words — you can still edit below.");
+      toast.success("Saved to Your words");
+      handleExit();
     } catch {
       toast.error(USER_SAFE_ERROR_MESSAGE);
     } finally {
@@ -284,9 +298,7 @@ export function BrandInterviewTalkPanel({
       if (next?.question_key) {
         setCurrentQuestionKey(next.question_key);
         setCurrentQuestion(next.question_text ?? "");
-        setTalkStatus(
-          "Saved. Answer the next question, then Save & next again.",
-        );
+        setTalkStatus("Saved. Take your time on the next question.");
         rtcRef.current?.sendAppMessage({
           type: "sync_question",
           question_key: next.question_key,
@@ -310,7 +322,7 @@ export function BrandInterviewTalkPanel({
     const live = active.interview_session;
     if (!live || live.status !== "in_progress") {
       toast.error(
-        "No active interview. Use Prepare questions to start a new sitting.",
+        "No active interview. Prepare the session again or start a fresh sitting.",
       );
       setSession(null);
       return;
@@ -353,7 +365,7 @@ export function BrandInterviewTalkPanel({
             setVoiceDraft(message.text ?? "");
           }
           if (message.type === "all_questions_answered") {
-            setTalkStatus("All questions saved in this sitting.");
+            setTalkStatus("All questions captured — review next.");
           }
           if (message.type === "session_closed") {
             setTalkStatus(message.message ?? "Interview already finished.");
@@ -366,186 +378,54 @@ export function BrandInterviewTalkPanel({
         },
       });
       rtcRef.current = rtc;
-      setTalkStatus(
-        "Speak your full answer to this question. Edit the text if needed, then Save & next.",
-      );
+      setTalkStatus("Listening… edit the text anytime, then Save & next.");
     } catch {
       toast.error(
-        "Could not connect. Is the voice server running on your machine?",
+        "Could not connect to voice. Check that the voice server is running locally.",
       );
       setTalkStatus(null);
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Talk through it</CardTitle>
-        <CardDescription>
-          One question at a time. We capture what you say for that question
-          only—you choose when to save and move on.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Cold open (one sentence we will not rewrite)
-          <Textarea
-            value={coldOpen}
-            onChange={(event) => setColdOpen(event.target.value)}
-            rows={2}
-            disabled={startMutation.isPending || isLive}
-            placeholder="What you wish people understood about your work"
-          />
-        </label>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              !userId || startMutation.isPending || !coldOpen.trim() || isLive
-            }
-            onClick={() => startMutation.mutate({ forceNew: false })}
-          >
-            {startMutation.isPending ? "Preparing…" : "Prepare questions"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={
-              !userId || startMutation.isPending || !coldOpen.trim() || isLive
-            }
-            onClick={() => {
-              disconnect();
-              setTalkStatus(null);
-              startMutation.mutate({ forceNew: true });
-            }}
-          >
-            Start new sitting
-          </Button>
-
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={readAloud}
-              onChange={(event) => setReadAloud(event.target.checked)}
-              disabled={isLive}
-            />
-            Read questions aloud (when supported)
-          </label>
-        </div>
-
-        {reviewSession ? (
-          <div className="flex flex-col gap-4 rounded-md border bg-muted/20 p-4">
-            <p className="text-sm font-medium">Review before we save</p>
-            <p className="text-xs text-muted-foreground">
-              Voice guesses words wrong sometimes. Fix anything that is not
-              what you meant — we keep your wording, not a rewrite.
-            </p>
-            {(reviewSession.questions ?? [])
-              .filter((q) => q.answered)
-              .map((q) => (
-                <label
-                  key={q.question_key}
-                  className="flex flex-col gap-1 text-sm"
-                >
-                  {q.question_text}
-                  <Textarea
-                    value={reviewDrafts[q.question_key] ?? ""}
-                    onChange={(event) =>
-                      setReviewDrafts((prev) => ({
-                        ...prev,
-                        [q.question_key]: event.target.value,
-                      }))
-                    }
-                    rows={4}
-                  />
-                </label>
-              ))}
-            <Button
-              type="button"
-              disabled={isFinishing}
-              onClick={() => void finishReview()}
-            >
-              {isFinishing ? "Saving…" : "Finish & save to Your words"}
-            </Button>
-          </div>
-        ) : null}
-
-        {prepBrief && !reviewSession ? (
-          <p className="rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap">
-            {prepBrief}
-          </p>
-        ) : null}
-
-        {!reviewSession && effectiveQuestionText ? (
-          <p className="text-sm font-medium">{effectiveQuestionText}</p>
-        ) : null}
-
-        {!reviewSession && sessionReady && effectiveQuestionKey ? (
-          <label className="flex flex-col gap-1 text-sm">
-            Transcript for this question (edit before saving)
-            <Textarea
-              value={voiceDraft}
-              onChange={(event) => setVoiceDraft(event.target.value)}
-              rows={4}
-              placeholder="Talk while connected, or type here"
-            />
-          </label>
-        ) : sessionReady ? (
-          <p className="text-sm text-muted-foreground">
-            No open questions in this sitting. Use Start new sitting.
-          </p>
-        ) : null}
-
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            disabled={!sessionReady || isLive || Boolean(reviewSession)}
-            onClick={() => void onConnectTalk()}
-          >
-            Start talking
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={!canSaveStep}
-            onClick={() => void onSaveAndNextQuestion()}
-          >
-            {isSavingStep ? "Saving…" : "Save & next question"}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!isLive}
-            onClick={() => {
-              disconnect();
-              setTalkStatus("Disconnected.");
-            }}
-          >
-            Stop mic
-          </Button>
-        </div>
-
-        {talkStatus ? (
-          <p className="text-xs text-muted-foreground" role="status">
-            {talkStatus}
-          </p>
-        ) : null}
-
-        {sessionReady && effectiveQuestionKey && !voiceDraft.trim() ? (
-          <p className="text-xs text-muted-foreground">
-            Save stays off until this box has text — speak with Start talking
-            or type your answer.
-          </p>
-        ) : null}
-
-        <p className="text-xs text-muted-foreground">
-          Voice only fills the box above. Nothing is split across questions
-          until you click Save & next. Requires{" "}
-          <code className="text-[0.7rem]">python voice_agent/bot.py -t webrtc --port 8765</code>.
-        </p>
-      </CardContent>
-    </Card>
+    <TalkSessionView
+      brandName={profile.business_name}
+      phase={phase}
+      coldOpen={coldOpen}
+      onColdOpenChange={setColdOpen}
+      prepBrief={prepBrief}
+      questionText={effectiveQuestionText}
+      voiceDraft={voiceDraft}
+      onVoiceDraftChange={setVoiceDraft}
+      talkStatus={talkStatus}
+      connectionState={connectionState}
+      readAloud={readAloud}
+      onReadAloudChange={setReadAloud}
+      reviewSession={reviewSession}
+      reviewDrafts={reviewDrafts}
+      onReviewDraftChange={(key, value) =>
+        setReviewDrafts((prev) => ({ ...prev, [key]: value }))
+      }
+      session={session}
+      isPreparing={startMutation.isPending}
+      isSavingStep={isSavingStep}
+      isFinishing={isFinishing}
+      canSaveStep={canSaveStep}
+      sessionReady={sessionReady}
+      onExit={handleExit}
+      onPrepare={() => startMutation.mutate({ forceNew: false })}
+      onStartNewSitting={() => {
+        disconnect();
+        setTalkStatus(null);
+        startMutation.mutate({ forceNew: true });
+      }}
+      onConnectTalk={() => void onConnectTalk()}
+      onSaveAndNext={() => void onSaveAndNextQuestion()}
+      onStopMic={() => {
+        disconnect();
+        setTalkStatus("Mic off — you can still type and save.");
+      }}
+      onFinishReview={() => void finishReview()}
+    />
   );
 }

@@ -1,27 +1,15 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { DraftGeneratingStatus } from "@/components/content/draft-generating-status";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PlatformRoom } from "@/components/ux/platform-room";
+import { StudioSectionIntro } from "@/components/ux/studio-section-intro";
 import {
   generateBrandDraft,
   getDraftTopics,
@@ -30,8 +18,13 @@ import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import { useDraftGenerateFlow } from "@/lib/content/use-draft-generate-flow";
 import { useUserId } from "@/lib/auth";
 import type { BrandProfile } from "@/types/brand";
+import { cn } from "@/lib/utils";
 
 export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
+  return <BrandDraftPanelInner key={profile.id} profile={profile} />;
+}
+
+function BrandDraftPanelInner({ profile }: { profile: BrandProfile }) {
   const userId = useUserId();
   const profileId = profile.id;
   const draftFlow = useDraftGenerateFlow({ userId, brandProfileId: profileId });
@@ -39,13 +32,6 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState("instagram");
-
-  useEffect(() => {
-    setTopic("");
-    setDescription("");
-    setPlatform("instagram");
-    draftFlow.resetFlow();
-  }, [profileId]); // eslint-disable-line react-hooks/exhaustive-deps -- reset form when brand changes
 
   const topicsQuery = useQuery({
     queryKey: ["brand-draft-topics", profileId, userId],
@@ -117,7 +103,7 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
   }
   if (draftFlow.phase === "poll_exhausted") {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="w-full">
         <DraftGeneratingStatus phase="poll_exhausted" />
         <div className="mt-4 flex gap-2">
           <Button type="button" variant="outline" onClick={() => draftFlow.resetFlow()}>
@@ -129,25 +115,26 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
   }
 
   return (
-    <Card className="mx-auto max-w-2xl">
-      <CardHeader>
-        <CardTitle className="text-base">Draft</CardTitle>
-        <CardDescription>
-          One idea at a time, grounded in your promise and the words you gave
-          us — not generic marketing filler.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {!ready ? (
-          <p className="text-sm text-muted-foreground">
-            Add at least three pastes or interview answers under Your words
-            first.
-          </p>
-        ) : null}
+    <div className="flex flex-col gap-8">
+      <StudioSectionIntro
+        title="Draft studio"
+        titleClassName="brand-heading"
+        description="One idea from your material. One room. We write as you—not generic filler."
+      />
 
-        {topics.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">From your material</span>
+      {!ready ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          Add at least three pastes or interview answers under Your words first.
+        </p>
+      ) : null}
+
+      <form
+        onSubmit={onSubmit}
+        className="grid gap-8 lg:grid-cols-2 lg:gap-10"
+      >
+        <div className="surface-panel flex flex-col gap-4 p-5">
+          <h3 className="text-sm font-medium">From your material</h3>
+          {topics.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {topics.map((chip) => (
                 <Button
@@ -162,10 +149,11 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
                 </Button>
               ))}
             </div>
-          </div>
-        ) : null}
-
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Add more under Your words to see topic chips here.
+            </p>
+          )}
           <label className="flex flex-col gap-1 text-sm">
             Topic for this post
             <Input
@@ -175,7 +163,6 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
               required
             />
           </label>
-
           <label className="flex flex-col gap-1 text-sm">
             Extra direction (optional)
             <Textarea
@@ -185,23 +172,17 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
               placeholder="Angle or constraint for this draft"
             />
           </label>
+        </div>
 
-          <div className="flex flex-col gap-1 text-sm">
-            Platform
-            <Select value={platform} onValueChange={setPlatform}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="instagram">Instagram</SelectItem>
-                <SelectItem value="linkedin">LinkedIn</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col gap-6">
+          <div className="surface-panel p-5">
+            <PlatformRoom value={platform} onChange={setPlatform} />
           </div>
-
           <Button
             type="submit"
+            variant="studio"
+            size="lg"
+            className={cn("w-full", !ready && "opacity-50")}
             disabled={
               !ready ||
               !topic.trim() ||
@@ -210,10 +191,10 @@ export function BrandDraftPanel({ profile }: { profile: BrandProfile }) {
               !userId
             }
           >
-            Generate draft
+            Write as me
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+    </div>
   );
 }
