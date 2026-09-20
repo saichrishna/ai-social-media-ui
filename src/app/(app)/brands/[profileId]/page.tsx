@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { BrandHome } from "@/components/brands/brand-home";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
 import { getBrandProfile } from "@/lib/api/brands";
 import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
+import { useBrandSelection } from "@/lib/brands/brand-selection-provider";
 
 export default function BrandDetailPage({
   params,
@@ -15,6 +16,15 @@ export default function BrandDetailPage({
   params: Promise<{ profileId: string }>;
 }) {
   const { profileId } = use(params);
+  const { setSelectedBrandProfileId, selectedBrandProfileId } =
+    useBrandSelection();
+
+  useEffect(() => {
+    if (profileId && profileId !== selectedBrandProfileId) {
+      setSelectedBrandProfileId(profileId);
+    }
+  }, [profileId, selectedBrandProfileId, setSelectedBrandProfileId]);
+
   const query = useQuery({
     queryKey: ["brand-profile", profileId],
     queryFn: () => getBrandProfile(profileId),
@@ -43,6 +53,10 @@ export default function BrandDetailPage({
     [];
 
   return (
-    <BrandHome profile={profile} promiseWarnings={promiseWarnings} />
+    <BrandHome
+      key={profile.id}
+      profile={profile}
+      promiseWarnings={promiseWarnings}
+    />
   );
 }

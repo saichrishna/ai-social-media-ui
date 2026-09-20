@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { CheckIcon, ChevronDownIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useBrandSelection } from "@/lib/brands/brand-selection-provider";
 
+const BRAND_DETAIL_PATH = /^\/brands\/([^/]+)\/?$/;
+
 export function BrandSelector() {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     brands,
     selectedBrand,
@@ -26,6 +29,15 @@ export function BrandSelector() {
   } = useBrandSelection();
 
   const label = selectedBrand?.business_name ?? "Select a brand";
+
+  function onSelectBrand(brandId: string) {
+    setSelectedBrandProfileId(brandId);
+    const match = pathname.match(BRAND_DETAIL_PATH);
+    const routeBrandId = match?.[1];
+    if (routeBrandId && routeBrandId !== "new" && routeBrandId !== brandId) {
+      router.push(`/brands/${encodeURIComponent(brandId)}`);
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -49,7 +61,7 @@ export function BrandSelector() {
             brands.map((brand) => (
               <DropdownMenuItem
                 key={brand.id}
-                onSelect={() => setSelectedBrandProfileId(brand.id)}
+                onSelect={() => onSelectBrand(brand.id)}
               >
                 {selectedBrandProfileId === brand.id ? (
                   <CheckIcon aria-hidden />

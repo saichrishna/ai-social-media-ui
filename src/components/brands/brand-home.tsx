@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { BrandDraftLockedPanel } from "@/components/brands/brand-draft-locked-panel";
+import { BrandDraftPanel } from "@/components/brands/brand-draft-panel";
 import { BrandProgressStrip } from "@/components/brands/brand-progress-strip";
 import { BrandPromisePanel } from "@/components/brands/brand-promise-panel";
 import { BrandYourWordsPanel } from "@/components/brands/brand-your-words-panel";
@@ -83,6 +84,9 @@ export function BrandHome({
   const activeStripStep =
     setupStatus === "ready_to_draft" ? "Draft" : setupStatus === "need_your_words" ? "Words" : "Promise";
 
+  const draftReady = setupStatus === "ready_to_draft";
+  const defaultTab = draftReady ? "draft" : "promise";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -95,11 +99,11 @@ export function BrandHome({
         <BrandProgressStrip activeStep={activeStripStep} />
       </div>
 
-      <Tabs defaultValue="promise" className="gap-4">
+      <Tabs defaultValue={defaultTab} className="gap-4">
         <TabsList>
           <TabsTrigger value="promise">Promise</TabsTrigger>
           <TabsTrigger value="words">Your words</TabsTrigger>
-          <TabsTrigger value="draft" disabled>
+          <TabsTrigger value="draft" disabled={!draftReady}>
             Draft
           </TabsTrigger>
         </TabsList>
@@ -113,7 +117,11 @@ export function BrandHome({
           <BrandYourWordsPanel profile={profile} />
         </TabsContent>
         <TabsContent value="draft">
-          <BrandDraftLockedPanel />
+          {draftReady ? (
+            <BrandDraftPanel profile={profile} />
+          ) : (
+            <BrandDraftLockedPanel />
+          )}
         </TabsContent>
       </Tabs>
 

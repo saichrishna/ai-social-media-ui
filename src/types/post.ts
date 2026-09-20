@@ -26,6 +26,8 @@ export type SocialPost = {
   published_at?: string | null;
   error_message?: string | null;
   created_at?: string;
+  /** Present on list responses when image_url exists (GET detail uses envelope field). */
+  image_signed_url?: string | null;
 };
 
 export type SocialPostsResponse = {

@@ -99,6 +99,13 @@ export async function apiFetch<T>(
     if (error instanceof ApiError) {
       throw error;
     }
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("API request timed out:", path);
+      throw new ApiError(
+        0,
+        "That took too long. Check that the API and Ollama are running, then try again.",
+      );
+    }
     console.error("API request failed:", error);
     throw toUserSafeError(0);
   } finally {

@@ -129,13 +129,21 @@ function LibraryItemCard({ post }: { post: SocialPost }) {
   return (
     <Card className="h-full">
       <div className="overflow-hidden bg-muted">
-        {/* List image_url is a storage path — never use as img src. */}
-        <div
-          className="flex aspect-square items-center justify-center text-sm text-muted-foreground"
-          aria-hidden
-        >
-          No image
-        </div>
+        {post.image_signed_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.image_signed_url}
+            alt={post.headline || "Generated post image"}
+            className="aspect-square w-full object-cover"
+          />
+        ) : (
+          <div
+            className="flex aspect-square items-center justify-center text-sm text-muted-foreground"
+            aria-hidden
+          >
+            Preview not available
+          </div>
+        )}
       </div>
       <CardHeader>
         <CardTitle>{post.headline || "Untitled"}</CardTitle>

@@ -23,6 +23,7 @@ import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import { countYourWordsMaterial } from "@/lib/brands/brand-readiness";
 import { INTERVIEW_QUESTIONS } from "@/lib/brands/interview-questions";
 import { useUserId } from "@/lib/auth";
+import { BrandInterviewTalkPanel } from "@/components/brands/brand-interview-talk-panel";
 import type {
   BrandProfile,
   InterviewAnswerItem,
@@ -172,8 +173,8 @@ export function BrandYourWordsPanel({
           </p>
         ) : (
           <p className="mt-2 text-sm text-foreground/80" role="status">
-            You have enough here for us to know you. Draft is still coming in a
-            later phase.
+            You have enough here for us to know you. Open the Draft tab or
+            Create to generate from this material.
           </p>
         )}
       </div>
@@ -219,11 +220,14 @@ export function BrandYourWordsPanel({
         </CardContent>
       </Card>
 
+      <BrandInterviewTalkPanel profile={profile} />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Answer in your own words</CardTitle>
           <CardDescription>
-            Skip anything you do not want to share. Save when you are done.
+            After a voice sitting, your answers appear here — edit typos and
+            anything the mic misheard, then Save answers.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -256,10 +260,6 @@ export function BrandYourWordsPanel({
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground">
-        Talk-to-record interview is planned for a later phase. Typing and paste
-        are the path for now.
-      </p>
     </div>
   );
 }

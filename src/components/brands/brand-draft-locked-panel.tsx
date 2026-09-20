@@ -15,12 +15,11 @@ export function BrandDraftLockedPanel() {
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">
         <p>
-          When Promise and your words are in place, one idea and one channel at
-          a time will live here. That step is a later phase — not part of this
-          slice.
+          When Promise is complete and you have at least three pastes or
+          answers under Your words, the Draft tab unlocks here.
         </p>
         <p className="mt-3">
-          For now, finish your promise and add something only you would know.
+          Finish your promise and add something only you would know.
         </p>
       </CardContent>
     </Card>

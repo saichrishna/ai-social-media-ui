@@ -451,6 +451,8 @@ The product specification intentionally favors the existing local AI direction.
 
 When this capability is eventually implemented, inspect the existing local Ollama/STT architecture first.
 
+**Voice stack decision (locked):** see [BRAND_DNA_VOICE_STACK.md](./BRAND_DNA_VOICE_STACK.md) — Pipecat (self-hosted) for production browser voice; FastAPI interview session API remains source of truth; Dograh optional for internal experiments; LiveKit deferred until telephony/scale needs.
+
 Potential future components include:
 
 - local Whisper-class STT
