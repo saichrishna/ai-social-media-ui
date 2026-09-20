@@ -3,7 +3,7 @@
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { BrandForm } from "@/components/brands/brand-form";
+import { BrandHome } from "@/components/brands/brand-home";
 import { ErrorState } from "@/components/states/error-state";
 import { LoadingState } from "@/components/states/loading-state";
 import { getBrandProfile } from "@/lib/api/brands";
@@ -37,11 +37,12 @@ export default function BrandDetailPage({
   }
 
   const profile = query.data.brand_profile;
+  const promiseWarnings =
+    query.data.promise_warnings ??
+    profile.promise_warnings ??
+    [];
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{profile.business_name}</h1>
-      <BrandForm key={profile.id} profile={profile} />
-    </div>
+    <BrandHome profile={profile} promiseWarnings={promiseWarnings} />
   );
 }

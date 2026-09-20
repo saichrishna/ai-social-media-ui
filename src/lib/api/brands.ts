@@ -4,6 +4,11 @@ import type {
   BrandProfileResponse,
   BrandProfilesResponse,
   DeleteBrandProfileResponse,
+  InterviewAnswersResponse,
+  InterviewAnswersSaveRequest,
+  VoiceSampleRequest,
+  VoiceSampleResponse,
+  VoiceSamplesResponse,
 } from "@/types/brand";
 
 export async function createBrandProfile(
@@ -50,5 +55,59 @@ export async function deleteBrandProfile(
   return apiFetch<DeleteBrandProfileResponse>(
     `/brand-profiles/${encodeURIComponent(profileId)}`,
     { method: "DELETE" },
+  );
+}
+
+export async function addVoiceSample(
+  profileId: string,
+  userId: string,
+  body: Omit<VoiceSampleRequest, "user_id">,
+): Promise<VoiceSampleResponse> {
+  const payload: VoiceSampleRequest = {
+    user_id: userId,
+    ...body,
+  };
+  return apiFetch<VoiceSampleResponse>(
+    `/brand-profiles/${encodeURIComponent(profileId)}/samples?user_id=${encodeURIComponent(userId)}`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function getVoiceSamples(
+  profileId: string,
+  userId: string,
+): Promise<VoiceSamplesResponse> {
+  return apiFetch<VoiceSamplesResponse>(
+    `/brand-profiles/${encodeURIComponent(profileId)}/samples?user_id=${encodeURIComponent(userId)}`,
+  );
+}
+
+export async function saveInterviewAnswers(
+  profileId: string,
+  userId: string,
+  body: Omit<InterviewAnswersSaveRequest, "user_id">,
+): Promise<InterviewAnswersResponse> {
+  const payload: InterviewAnswersSaveRequest = {
+    user_id: userId,
+    ...body,
+  };
+  return apiFetch<InterviewAnswersResponse>(
+    `/brand-profiles/${encodeURIComponent(profileId)}/interview-answers?user_id=${encodeURIComponent(userId)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function getInterviewAnswers(
+  profileId: string,
+  userId: string,
+): Promise<InterviewAnswersResponse> {
+  return apiFetch<InterviewAnswersResponse>(
+    `/brand-profiles/${encodeURIComponent(profileId)}/interview-answers?user_id=${encodeURIComponent(userId)}`,
   );
 }

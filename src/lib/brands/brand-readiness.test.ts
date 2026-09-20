@@ -1,0 +1,99 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  countYourWordsMaterial,
+  deriveBrandSetupStatus,
+} from "@/lib/brands/brand-readiness";
+import type { BrandProfile, InterviewAnswer, VoiceSample } from "@/types/brand";
+
+const completePromise: BrandProfile = {
+  id: "b1",
+  user_id: "u1",
+  business_name: "Co",
+  industry: "X",
+  location: "",
+  brand_voice: "",
+  target_audience: "Founders",
+  services: [],
+  preferred_hashtags: [],
+  forbidden_topics: [],
+  additional_instructions: "",
+  not_for: "Enterprises",
+  desired_outcome: "Trust",
+};
+
+describe("brand readiness", () => {
+  it("counts paste samples and filled answers toward material", () => {
+    const samples: VoiceSample[] = [
+      {
+        id: "1",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        source: "paste",
+        content: "One",
+      },
+      {
+        id: "2",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        source: "audio",
+        content: "Two",
+      },
+    ];
+    const answers: InterviewAnswer[] = [
+      {
+        id: "a1",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        question_key: "customers_get_wrong",
+        question_text: "",
+        answer_text: "Answer",
+        source: "type",
+      },
+    ];
+    expect(countYourWordsMaterial(samples, answers)).toBe(2);
+  });
+
+  it("requires promise before ready_to_draft", () => {
+    expect(
+      deriveBrandSetupStatus(
+        { ...completePromise, not_for: "", target_audience: "" },
+        [],
+        [],
+      ),
+    ).toBe("promise_incomplete");
+  });
+
+  it("needs three material items for ready_to_draft", () => {
+    const samples: VoiceSample[] = [
+      {
+        id: "1",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        source: "paste",
+        content: "a",
+      },
+      {
+        id: "2",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        source: "paste",
+        content: "b",
+      },
+    ];
+    const answers: InterviewAnswer[] = [
+      {
+        id: "a1",
+        user_id: "u1",
+        brand_profile_id: "b1",
+        question_key: "k",
+        question_text: "",
+        answer_text: "c",
+        source: "type",
+      },
+    ];
+    expect(deriveBrandSetupStatus(completePromise, samples, answers)).toBe(
+      "ready_to_draft",
+    );
+  });
+});

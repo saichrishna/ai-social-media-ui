@@ -62,6 +62,10 @@ export function BrandForm({
   const [instructions, setInstructions] = useState(
     profile?.additional_instructions ?? "",
   );
+  const [notFor, setNotFor] = useState(profile?.not_for ?? "");
+  const [desiredOutcome, setDesiredOutcome] = useState(
+    profile?.desired_outcome ?? "",
+  );
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -79,6 +83,8 @@ export function BrandForm({
         preferred_hashtags: linesToList(hashtags),
         forbidden_topics: linesToList(forbidden),
         additional_instructions: instructions.trim(),
+        not_for: notFor.trim(),
+        desired_outcome: desiredOutcome.trim(),
       };
       if (profile) {
         return updateBrandProfile(profile.id, body);
