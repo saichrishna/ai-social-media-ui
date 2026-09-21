@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { journeyStepFromStrip } from "@/components/ux/journey-stepper";
-import { getInterviewAnswers, getVoiceSamples } from "@/lib/api/brands";
+import { getCorpusItems } from "@/lib/api/brands";
 import {
   brandSetupStatusLabel,
-  countYourWordsMaterial,
+  countCorpusMaterial,
   deriveBrandSetupStatus,
   type BrandSetupStatus,
 } from "@/lib/brands/brand-readiness";
@@ -33,26 +33,19 @@ export function useDashboardBrandContext() {
 
   const profileId = selectedBrandProfileId;
 
-  const samplesQuery = useQuery({
-    queryKey: ["brand-voice-samples", profileId, userId],
-    queryFn: () => getVoiceSamples(profileId!, userId!),
+  const corpusQuery = useQuery({
+    queryKey: ["brand-corpus-items", profileId, userId],
+    queryFn: () => getCorpusItems(profileId!, userId!),
     enabled: Boolean(userId && profileId),
   });
 
-  const answersQuery = useQuery({
-    queryKey: ["brand-interview-answers", profileId, userId],
-    queryFn: () => getInterviewAnswers(profileId!, userId!),
-    enabled: Boolean(userId && profileId),
-  });
-
-  const samples = samplesQuery.data?.voice_samples ?? [];
-  const answers = answersQuery.data?.interview_answers ?? [];
+  const corpusItems = corpusQuery.data?.corpus_items ?? [];
 
   const setupStatus = selectedBrand
-    ? deriveBrandSetupStatus(selectedBrand, samples, answers)
+    ? deriveBrandSetupStatus(selectedBrand, corpusItems)
     : null;
 
-  const materialCount = countYourWordsMaterial(samples, answers);
+  const materialCount = countCorpusMaterial(corpusItems);
   const typography = selectedBrand
     ? deriveBrandTypography(selectedBrand)
     : null;
@@ -62,9 +55,7 @@ export function useDashboardBrandContext() {
       ? journeyStepFromStrip(activeJourneyStrip(setupStatus))
       : "promise";
 
-  const readinessLoading =
-    Boolean(profileId) &&
-    (samplesQuery.isLoading || answersQuery.isLoading);
+  const readinessLoading = Boolean(profileId) && corpusQuery.isLoading;
 
   return {
     brands,

@@ -17,6 +17,8 @@ export function getDashboardNextAction(input: {
   materialCount: number;
   postsNeedingAttention: number;
   totalPosts: number;
+  continueStudioHref?: string | null;
+  hasActiveTalkSession?: boolean;
 }): DashboardNextAction {
   const brandBase = `/brands/${encodeURIComponent(input.brandId)}`;
 
@@ -33,6 +35,31 @@ export function getDashboardNextAction(input: {
     };
   }
 
+  if (input.hasActiveTalkSession) {
+    return {
+      eyebrow: "Talk in progress",
+      title: "Pick up where you left off",
+      description:
+        "Your answers are not in your corpus until you finish and save.",
+      href: `${brandBase}?tab=words&talk=1`,
+      ctaLabel: "Continue talk",
+      secondaryHref: `${brandBase}?tab=words&talk=mini`,
+      secondaryLabel: "Start mini talk instead",
+    };
+  }
+
+  if (input.continueStudioHref) {
+    return {
+      eyebrow: "Content studio",
+      title: "Continue where you left off",
+      description: "Your last post is still open — approve, edit, or schedule.",
+      href: input.continueStudioHref,
+      ctaLabel: "Continue in studio",
+      secondaryHref: "/create",
+      secondaryLabel: "Write another",
+    };
+  }
+
   if (input.setupStatus === "need_your_words") {
     const remaining = Math.max(0, 3 - input.materialCount);
     return {
@@ -42,11 +69,11 @@ export function getDashboardNextAction(input: {
           ? `Add ${remaining} more piece${remaining === 1 ? "" : "s"} only you would say`
           : "Almost there — save one more answer",
       description:
-        "Start with a talk session (~8 minutes). We write from your corpus, not the public internet.",
+        "Full talk (~8 minutes) for your first corpus. Mini talk works once you have a little material.",
       href: `${brandBase}?tab=words&talk=1`,
-      ctaLabel: "Begin talk session",
-      secondaryHref: `${brandBase}?tab=words`,
-      secondaryLabel: "Paste or type instead",
+      ctaLabel: "Begin full talk",
+      secondaryHref: `${brandBase}?tab=words&talk=mini`,
+      secondaryLabel: "Mini talk instead",
     };
   }
 
@@ -83,7 +110,7 @@ export function getDashboardNextAction(input: {
       "Same truth, different shape per platform — drafted from your promise and words.",
     href: "/create",
     ctaLabel: "Write as me",
-    secondaryHref: `${brandBase}?tab=draft`,
-    secondaryLabel: "Brand draft tab",
+    secondaryHref: `${brandBase}?tab=words&talk=mini`,
+    secondaryLabel: "Tell us something",
   };
 }

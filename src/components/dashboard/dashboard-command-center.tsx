@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   CalendarIcon,
   FileTextIcon,
@@ -12,14 +13,19 @@ import {
 
 import { JourneyStepper } from "@/components/ux/journey-stepper";
 import { Button } from "@/components/ui/button";
+import { getActiveInterviewSession } from "@/lib/api/brand-dna";
+import { getRecentActions } from "@/lib/activity/recent-actions";
 import { getDashboardNextAction } from "@/lib/dashboard/dashboard-next-action";
 import { useDashboardBrandContext } from "@/lib/dashboard/use-dashboard-brand-context";
+import { useUserId } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 function quickActionHref(key: string, brandId: string): string {
   switch (key) {
     case "talk":
       return `/brands/${brandId}?tab=words&talk=1`;
+    case "mini_talk":
+      return `/brands/${brandId}?tab=words&talk=mini`;
     case "promise":
       return `/brands/${brandId}?tab=promise`;
     case "draft":
@@ -76,6 +82,30 @@ const QUICK_ACTIONS = [
   },
 ] as const;
 
+function visibleQuickActions(draftReady: boolean) {
+  if (draftReady) {
+    const withoutTalk = QUICK_ACTIONS.filter((item) => item.key !== "talk");
+    return [
+      {
+        key: "mini_talk" as const,
+        label: "Mini talk",
+        description: "Random thought, ~2 min",
+        icon: MicIcon,
+        accent: false,
+      },
+      ...withoutTalk,
+      {
+        key: "talk" as const,
+        label: "Full sitting",
+        description: "Deep capture, ~8 min",
+        icon: MicIcon,
+        accent: false,
+      },
+    ];
+  }
+  return [...QUICK_ACTIONS];
+}
+
 export function DashboardCommandCenter({
   postsNeedingAttention,
   totalPosts,
@@ -83,7 +113,15 @@ export function DashboardCommandCenter({
   postsNeedingAttention: number;
   totalPosts: number;
 }) {
+  const userId = useUserId();
   const ctx = useDashboardBrandContext();
+  const recent = getRecentActions(3);
+
+  const activeTalkQuery = useQuery({
+    queryKey: ["active-interview", ctx.profileId, userId],
+    queryFn: () => getActiveInterviewSession(ctx.profileId!, userId!),
+    enabled: Boolean(userId && ctx.profileId),
+  });
 
   if (!ctx.selectedBrand || !ctx.profileId || !ctx.setupStatus) {
     return null;
@@ -91,6 +129,12 @@ export function DashboardCommandCenter({
 
   const brand = ctx.selectedBrand;
   const brandId = ctx.profileId;
+  const continueStudioHref =
+    recent.find((item) => item.kind === "content_studio")?.href ?? null;
+  const hasActiveTalkSession = Boolean(
+    activeTalkQuery.data?.interview_session,
+  );
+
   const action = getDashboardNextAction({
     brandId,
     brandName: brand.business_name,
@@ -98,7 +142,11 @@ export function DashboardCommandCenter({
     materialCount: ctx.materialCount,
     postsNeedingAttention,
     totalPosts,
+    continueStudioHref,
+    hasActiveTalkSession,
   });
+
+  const quickActions = visibleQuickActions(ctx.draftReady);
 
   const materialPct = Math.min(
     100,
@@ -250,14 +298,33 @@ export function DashboardCommandCenter({
         </section>
       </div>
 
-      <section aria-label="Quick actions" className="flex flex-col gap-3">
-        <h3 className="type-section text-base">Jump to</h3>
+      {recent.length > 0 ? (
+        <section aria-label="Recent" className="flex flex-col gap-3">
+          <h3 className="type-section text-base">Recent</h3>
+          <ul className="grid gap-2 sm:grid-cols-3">
+            {recent.map((item) => (
+              <li key={`${item.kind}-${item.href}`}>
+                <Link
+                  href={item.href}
+                  className="surface-panel block p-4 text-sm ring-0 transition-[box-shadow,transform] hover:shadow-[var(--shadow-panel-hover)]"
+                >
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section aria-label="More actions" className="flex flex-col gap-3">
+        <h3 className="type-section text-base">More</h3>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {QUICK_ACTIONS.map((item) => {
+          {quickActions.map((item) => {
             const href = quickActionHref(item.key, brandId);
             const Icon = item.icon;
             const disabled =
               "requiresDraft" in item && item.requiresDraft && !ctx.draftReady;
+            const isMini = item.key === "mini_talk";
             return (
               <li key={item.key}>
                 {disabled ? (
@@ -273,14 +340,15 @@ export function DashboardCommandCenter({
                     href={href}
                     className={cn(
                       "surface-panel flex h-full flex-col gap-2 p-4 ring-0 transition-[box-shadow,transform] hover:shadow-[var(--shadow-panel-hover)]",
-                      item.key === "talk" &&
+                      (item.key === "talk" || isMini) &&
+                        !ctx.draftReady &&
                         "border-[color-mix(in_oklch,var(--studio-accent-start),transparent_55%)]",
                     )}
                   >
                     <Icon
                       className={cn(
                         "size-5",
-                        item.key === "talk"
+                        item.key === "talk" && !ctx.draftReady
                           ? "text-[color:var(--studio-accent-start)]"
                           : "text-muted-foreground",
                       )}

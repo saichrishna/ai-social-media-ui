@@ -18,14 +18,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  deleteBrandProfile,
-  getInterviewAnswers,
-  getVoiceSamples,
-} from "@/lib/api/brands";
+import { deleteBrandProfile, getCorpusItems } from "@/lib/api/brands";
 import {
   brandTabStatusDescription,
-  countYourWordsMaterial,
+  countCorpusMaterial,
   deriveBrandSetupStatus,
   type BrandHomeTab,
 } from "@/lib/brands/brand-readiness";
@@ -44,15 +40,9 @@ export function BrandHome({
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
 
-  const samplesQuery = useQuery({
-    queryKey: ["brand-voice-samples", profile.id, userId],
-    queryFn: () => getVoiceSamples(profile.id, userId!),
-    enabled: Boolean(userId),
-  });
-
-  const answersQuery = useQuery({
-    queryKey: ["brand-interview-answers", profile.id, userId],
-    queryFn: () => getInterviewAnswers(profile.id, userId!),
+  const corpusQuery = useQuery({
+    queryKey: ["brand-corpus-items", profile.id, userId],
+    queryFn: () => getCorpusItems(profile.id, userId!),
     enabled: Boolean(userId),
   });
 
@@ -61,8 +51,7 @@ export function BrandHome({
       ...profile,
       promise_warnings: promiseWarnings,
     },
-    samplesQuery.data?.voice_samples ?? [],
-    answersQuery.data?.interview_answers ?? [],
+    corpusQuery.data?.corpus_items ?? [],
   );
 
   const deleteMutation = useMutation({
@@ -91,9 +80,8 @@ export function BrandHome({
         : tabParam
       : defaultTab;
 
-  const materialCount = countYourWordsMaterial(
-    samplesQuery.data?.voice_samples ?? [],
-    answersQuery.data?.interview_answers ?? [],
+  const materialCount = countCorpusMaterial(
+    corpusQuery.data?.corpus_items ?? [],
   );
 
   function onTabChange(value: string) {

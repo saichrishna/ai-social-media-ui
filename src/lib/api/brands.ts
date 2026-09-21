@@ -9,6 +9,7 @@ import type {
   VoiceSampleRequest,
   VoiceSampleResponse,
   VoiceSamplesResponse,
+  CorpusItemsResponse,
 } from "@/types/brand";
 
 export async function createBrandProfile(
@@ -109,5 +110,14 @@ export async function getInterviewAnswers(
 ): Promise<InterviewAnswersResponse> {
   return apiFetch<InterviewAnswersResponse>(
     `/brand-profiles/${encodeURIComponent(profileId)}/interview-answers?user_id=${encodeURIComponent(userId)}`,
+  );
+}
+
+export async function getCorpusItems(
+  profileId: string,
+  userId: string,
+): Promise<CorpusItemsResponse> {
+  return apiFetch<CorpusItemsResponse>(
+    `/brand-profiles/${encodeURIComponent(profileId)}/corpus-items?user_id=${encodeURIComponent(userId)}`,
   );
 }

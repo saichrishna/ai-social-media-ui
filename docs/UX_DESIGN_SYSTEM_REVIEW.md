@@ -878,7 +878,27 @@ Only where frontend cannot complete UX without API changes.
 
 ---
 
-## 25. Final recommendations
+## 25. Interaction → corpus → generation (agent truth)
+
+Not every UI interaction feeds the next post. Use this when designing capture or dashboard priority.
+
+| Interaction | Stored | Used in `draft-generate` / DNA context |
+|-------------|--------|----------------------------------------|
+| Promise save | `brand_profiles` | Yes |
+| Talk finish & save | `corpus_items` (append per answer) | Yes (topic + recency, max 12 chunks) |
+| Paste on Your words | `corpus_items` | Yes |
+| Mini talk finish | `corpus_items` (`mini_talk`) | Yes — stacks, no theme overwrite |
+| Studio caption save | `social_posts` (+ optional `voice_samples` on meaningful rewrite) | Yes when edit is substantial |
+| Navigation / quick links | — | No (UI priority only) |
+| Abandoned talk | Session row | No until finished |
+
+**Channels** = platform rooms on Create (`PlatformRoom`), not a separate product chat. **Priority** = command center primary CTA + recent activity snapshot, not a static six-tile grid.
+
+Capture tiers: **mini talk** (1–2 min anytime), **full talk** (onboarding / deep sitting), **paste**. After `draft_ready`, demote full talk; lead with review / write / continue recent.
+
+---
+
+## 26. Final recommendations
 
 ### Preserve (do not regress)
 

@@ -19,15 +19,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   addVoiceSample,
-  getInterviewAnswers,
-  getVoiceSamples,
+  getCorpusItems,
   saveInterviewAnswers,
 } from "@/lib/api/brands";
 import { USER_SAFE_ERROR_MESSAGE } from "@/lib/api/client";
 import {
-  countYourWordsMaterial,
+  countCorpusMaterial,
   deriveBrandSetupStatus,
 } from "@/lib/brands/brand-readiness";
+import { corpusSourceLabel } from "@/lib/brands/corpus-label";
 import { INTERVIEW_QUESTIONS } from "@/lib/brands/interview-questions";
 import { useUserId } from "@/lib/auth";
 import type {
@@ -52,42 +52,36 @@ export function BrandYourWordsPanel({
   const [inTalkSession, setInTalkSession] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
 
-  const samplesQuery = useQuery({
-    queryKey: ["brand-voice-samples", profileId, userId],
-    queryFn: () => getVoiceSamples(profileId, userId!),
+  const corpusQuery = useQuery({
+    queryKey: ["brand-corpus-items", profileId, userId],
+    queryFn: () => getCorpusItems(profileId, userId!),
     enabled: Boolean(userId && profileId),
   });
 
-  const answersQuery = useQuery({
-    queryKey: ["brand-interview-answers", profileId, userId],
-    queryFn: () => getInterviewAnswers(profileId, userId!),
-    enabled: Boolean(userId && profileId),
-  });
-
-  const samples = samplesQuery.data?.voice_samples ?? [];
-  const savedAnswers = useMemo(
-    () => answersQuery.data?.interview_answers ?? [],
-    [answersQuery.data?.interview_answers],
-  );
+  const corpusItems = corpusQuery.data?.corpus_items ?? [];
 
   const initialAnswers = useMemo(() => {
-    const byKey = new Map(
-      savedAnswers.map((row) => [row.question_key, row.answer_text]),
-    );
+    const byKey = new Map<string, string>();
+    for (const item of corpusItems) {
+      const theme = item.theme?.trim();
+      if (!theme || byKey.has(theme)) {
+        continue;
+      }
+      byKey.set(theme, item.content);
+    }
     return Object.fromEntries(
       INTERVIEW_QUESTIONS.map((question) => [
         question.key,
         byKey.get(question.key) ?? "",
       ]),
     ) as Record<string, string>;
-  }, [savedAnswers]);
+  }, [corpusItems]);
 
   const [pasteDraft, setPasteDraft] = useState("");
 
-  const materialCount = countYourWordsMaterial(samples, savedAnswers);
+  const materialCount = countCorpusMaterial(corpusItems);
   const draftReady =
-    deriveBrandSetupStatus(profile, samples, savedAnswers) ===
-    "ready_to_draft";
+    deriveBrandSetupStatus(profile, corpusItems) === "ready_to_draft";
 
   const pasteMutation = useMutation({
     mutationFn: async () => {
@@ -106,7 +100,7 @@ export function BrandYourWordsPanel({
     onSuccess: async () => {
       setPasteDraft("");
       await queryClient.invalidateQueries({
-        queryKey: ["brand-voice-samples", profileId],
+        queryKey: ["brand-corpus-items", profileId],
       });
       toast.success("Caption saved");
     },
@@ -120,8 +114,11 @@ export function BrandYourWordsPanel({
     pasteMutation.mutate();
   }
 
-  const isLoading = samplesQuery.isLoading || answersQuery.isLoading;
-  const talkRequested = searchParams.get("talk") === "1";
+  const isLoading = corpusQuery.isLoading;
+  const talkParam = searchParams.get("talk");
+  const talkMode: "full" | "mini" =
+    talkParam === "mini" ? "mini" : "full";
+  const talkRequested = talkParam === "1" || talkParam === "mini";
   const showTalkSession =
     inTalkSession || (talkRequested && !isLoading);
 
@@ -147,7 +144,11 @@ export function BrandYourWordsPanel({
 
   if (showTalkSession && !isLoading) {
     return (
-      <BrandInterviewTalkPanel profile={profile} onExit={exitTalkSession} />
+      <BrandInterviewTalkPanel
+        profile={profile}
+        mode={talkMode}
+        onExit={exitTalkSession}
+      />
     );
   }
 
@@ -157,7 +158,7 @@ export function BrandYourWordsPanel({
     );
   }
 
-  if (samplesQuery.isError || answersQuery.isError) {
+  if (corpusQuery.isError) {
     return (
       <p className="text-sm text-muted-foreground">
         We could not load your words. Try refreshing the page.
@@ -186,11 +187,15 @@ export function BrandYourWordsPanel({
         </div>
       ) : null}
 
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <StudioSectionIntro
           title="You stay the expert. We do the writing."
           titleClassName="brand-heading"
-          description="The fastest path is a full-screen talk session — about eight minutes, one question at a time. Paste or type work too."
+          description={
+            draftReady
+              ? "Add more anytime. Mini talk is for random thoughts; full sitting goes deeper."
+              : "Start with full talk (~8 minutes) or paste until Draft unlocks."
+          }
           className="lg:py-2"
         >
           {materialCount < 3 ? (
@@ -203,37 +208,99 @@ export function BrandYourWordsPanel({
           ) : null}
         </StudioSectionIntro>
 
-        <Card
-          className={cn(
-            SURFACE_PANEL_CARD,
-            "overflow-hidden border-2 border-[color-mix(in_oklch,var(--studio-accent-start),transparent_70%)]",
-          )}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="brand-heading flex items-center gap-3 text-xl font-medium">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--studio-accent-start),var(--studio-accent-end))] text-white shadow-[var(--shadow-studio-glow)]">
-                <MicIcon className="size-5" />
-              </span>
-              Talk session
-            </CardTitle>
-            <CardDescription className="text-sm leading-relaxed">
-              Full-screen, one question at a time. You control when each answer
-              is saved.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              type="button"
-              variant="studio"
-              size="lg"
-              className="w-full"
-              onClick={() => setInTalkSession(true)}
-            >
-              Begin talk session
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-3">
+          <Card
+            className={cn(
+              SURFACE_PANEL_CARD,
+              "overflow-hidden",
+              draftReady &&
+                "border-2 border-[color-mix(in_oklch,var(--studio-accent-start),transparent_70%)]",
+            )}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="brand-heading flex items-center gap-3 text-xl font-medium">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--studio-accent-start),var(--studio-accent-end))] text-white shadow-[var(--shadow-studio-glow)]">
+                  <MicIcon className="size-5" />
+                </span>
+                {draftReady ? "Mini talk" : "Full talk"}
+              </CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                {draftReady
+                  ? "One or two questions, under two minutes — saves to your corpus."
+                  : "Full-screen, one question at a time. Best for your first corpus."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                type="button"
+                variant="studio"
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  if (draftReady) {
+                    const params = new URLSearchParams(
+                      searchParams.toString(),
+                    );
+                    params.set("tab", "words");
+                    params.set("talk", "mini");
+                    router.replace(
+                      `/brands/${profileId}?${params.toString()}`,
+                      { scroll: false },
+                    );
+                  } else {
+                    setInTalkSession(true);
+                  }
+                }}
+              >
+                {draftReady ? "Tell us something" : "Begin full talk"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {draftReady ? (
+            <Card className={cn(SURFACE_PANEL_CARD, "overflow-hidden")}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">
+                  Full sitting
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  ~8 minutes when you want a deeper capture session.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setInTalkSession(true)}
+                >
+                  Begin full talk
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
+
+      {corpusItems.length > 0 ? (
+        <section aria-label="Saved captures" className="flex flex-col gap-3">
+          <h3 className="type-section text-base">Your corpus</h3>
+          <ul className="flex flex-col gap-2">
+            {corpusItems.map((item) => (
+              <li
+                key={item.id}
+                className="surface-panel p-4 text-sm ring-0 whitespace-pre-wrap"
+              >
+                <span className="mb-1 block text-xs text-muted-foreground">
+                  {corpusSourceLabel(item.source)}
+                  {item.theme ? ` · ${item.theme.replace(/_/g, " ")}` : ""}
+                </span>
+                {item.content}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <Button
         type="button"
@@ -271,21 +338,6 @@ export function BrandYourWordsPanel({
                   {pasteMutation.isPending ? "Saving…" : "Save this caption"}
                 </Button>
               </form>
-              {samples.length > 0 ? (
-                <ul className="flex flex-col gap-2 border-t pt-3">
-                  {samples.map((sample) => (
-                    <li
-                      key={sample.id}
-                      className="rounded-md border bg-muted/30 p-3 text-sm whitespace-pre-wrap"
-                    >
-                      <span className="mb-1 block text-xs text-muted-foreground">
-                        {sample.source === "paste" ? "Paste" : "Transcript"}
-                      </span>
-                      {sample.content}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
             </CardContent>
           </Card>
 
@@ -298,13 +350,13 @@ export function BrandYourWordsPanel({
             </CardHeader>
             <CardContent>
               <TypedInterviewAnswersForm
-                key={`${profileId}-${answersQuery.dataUpdatedAt}`}
+                key={`${profileId}-${corpusQuery.dataUpdatedAt}`}
                 profileId={profileId}
                 userId={userId}
                 initialAnswers={initialAnswers}
                 onSaved={() => {
                   void queryClient.invalidateQueries({
-                    queryKey: ["brand-interview-answers", profileId],
+                    queryKey: ["brand-corpus-items", profileId],
                   });
                 }}
               />

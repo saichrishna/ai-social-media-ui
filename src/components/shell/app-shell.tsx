@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { MenuIcon, PanelLeftIcon } from "lucide-react";
 
 import { BrandSelector } from "@/components/brands/brand-selector";
+import { TellUsSomethingLink } from "@/components/shell/tell-us-something-link";
 import { AppNav } from "@/components/shell/nav";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,6 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
           <BrandSelector />
+          <TellUsSomethingLink />
         </header>
         <main
           id="main-content"

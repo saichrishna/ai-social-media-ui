@@ -18,7 +18,7 @@ export async function startInterviewSession(
   profileId: string,
   userId: string,
   coldOpenAnswer: string,
-  options?: { forceNew?: boolean },
+  options?: { forceNew?: boolean; mode?: "full" | "mini" },
 ): Promise<InterviewSessionResponse> {
   const forceNew = options?.forceNew ? "&force_new=true" : "";
   return apiFetch<InterviewSessionResponse>(
@@ -28,6 +28,7 @@ export async function startInterviewSession(
       body: JSON.stringify({
         user_id: userId,
         cold_open_answer: coldOpenAnswer,
+        mode: options?.mode ?? "full",
       }),
       timeoutMs: INTERVIEW_SESSION_TIMEOUT_MS,
     },

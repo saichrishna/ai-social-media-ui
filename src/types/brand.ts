@@ -47,7 +47,34 @@ export type DeleteBrandProfileResponse = {
   message: string;
 };
 
-export type VoiceSampleSource = "paste" | "audio";
+export type VoiceSampleSource = "paste" | "audio" | "studio_edit";
+
+export type CorpusItemSource =
+  | "full_talk"
+  | "mini_talk"
+  | "paste"
+  | "type"
+  | "studio_edit"
+  | "legacy_transcript"
+  | "legacy_answer";
+
+export type CorpusItem = {
+  id: string;
+  user_id: string;
+  brand_profile_id: string;
+  content: string;
+  source: CorpusItemSource;
+  theme?: string | null;
+  question_text?: string;
+  session_id?: string | null;
+  created_at?: string;
+};
+
+export type CorpusItemsResponse = {
+  success: boolean;
+  corpus_items: CorpusItem[];
+  material_count: number;
+};
 
 export type VoiceSample = {
   id: string;

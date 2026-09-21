@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -41,6 +41,9 @@ import {
 } from "@/lib/content/studio-status-actions";
 import { ExpandableText } from "@/components/ux/expandable-text";
 import { useUnsavedChangesGuard } from "@/lib/ux/use-unsaved-changes-guard";
+import { recordRecentAction } from "@/lib/activity/recent-actions";
+import { maybeAddEditToCorpus } from "@/lib/activity/record-corpus-from-edit";
+import { useUserId } from "@/lib/auth";
 import type { SocialPost } from "@/types/post";
 
 const SAVE_FAILURE_TITLE = "We couldn't save your changes.";
@@ -85,6 +88,7 @@ export default function ContentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const userId = useUserId();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -111,20 +115,34 @@ export default function ContentDetailPage({
   }
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      updateSocialPost(id, {
+    mutationFn: async (beforeCaption: string) => {
+      const payload = await updateSocialPost(id, {
         headline: form.headline,
         caption: form.caption,
         hashtags: parseHashtags(form.hashtags),
         call_to_action: form.callToAction,
         image_prompt: form.imagePrompt,
-      }),
-    onSuccess: async (payload) => {
-      if (!payload.success) {
+      });
+      return { payload, beforeCaption };
+    },
+    onSuccess: async (result) => {
+      if (!result.payload.success) {
         return;
       }
       setEditing(false);
       toast.success("Changes saved");
+      const savedPost = query.data?.post;
+      if (userId && savedPost?.brand_profile_id) {
+        const added = await maybeAddEditToCorpus({
+          brandProfileId: savedPost.brand_profile_id,
+          userId,
+          beforeCaption: result.beforeCaption,
+          afterCaption: form.caption,
+        }).catch(() => false);
+        if (added) {
+          toast.message("Saved how you say it — added to your words.");
+        }
+      }
       await refetchStudio();
     },
   });
@@ -173,6 +191,17 @@ export default function ContentDetailPage({
     baselineForm !== null &&
     !formsEqual(form, baselineForm);
   useUnsavedChangesGuard(isDirty);
+
+  useEffect(() => {
+    if (!post?.id) {
+      return;
+    }
+    recordRecentAction({
+      kind: "content_studio",
+      href: `/content/${encodeURIComponent(post.id)}`,
+      label: post.headline?.trim() || "Content studio",
+    });
+  }, [post?.id, post?.headline]);
 
   if (query.isLoading) {
     return (
@@ -230,7 +259,7 @@ export default function ContentDetailPage({
     (regenerateMapped !== null && !regenerateMapped.ok);
   const saveFailed =
     saveMutation.isError ||
-    (saveMutation.data !== undefined && !saveMutation.data.success);
+    (saveMutation.data !== undefined && !saveMutation.data.payload.success);
   const approveFailed =
     approveMutation.isError ||
     (approveMutation.data !== undefined && !approveMutation.data.success);
@@ -302,7 +331,7 @@ export default function ContentDetailPage({
           message={SAVE_FAILURE_TITLE}
           description={ACTION_FAILURE_DESCRIPTION}
           onRetry={() => {
-            saveMutation.mutate();
+            saveMutation.mutate(baselineForm?.caption ?? "");
           }}
         />
       ) : null}
@@ -342,7 +371,7 @@ export default function ContentDetailPage({
             className="surface-panel flex flex-col gap-4 p-5"
             onSubmit={(event) => {
               event.preventDefault();
-              saveMutation.mutate();
+              saveMutation.mutate(baselineForm?.caption ?? "");
             }}
           >
             <label className="flex flex-col gap-1 text-sm">

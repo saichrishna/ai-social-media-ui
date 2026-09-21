@@ -219,7 +219,9 @@ The public website can *explain* the interview (“we talk, we don’t make you 
 
 Do not interview before signup “to convert them.” If they bounce, we would be holding a stranger’s voice. If they finish then refuse an account, we should not have started.
 
-Logged-out users see: sign in / create account. Logged-in with no brand: **Name this brand, then talk.** Already have a brand: talk lives on **Your words**, they can do another sitting later (same rule: still them, still signed in).
+Logged-out users see: sign in / create account. Logged-in with no brand: **Name this brand, then talk.** Already have a brand: talk lives on **Your words**, they can do another sitting later (same rule: still them, still signed in). **Mini talk** (1–2 questions, &lt;2 min) is the default for random thoughts after DNA is ready; **full talk** stays for onboarding and deep capture.
+
+**What feeds generation:** promise fields, finished talk/paste/mini answers in the corpus (see UX review §25). Meaningful studio caption rewrites may add a paste sample; navigation alone does not feed generation.
 
 ### Stage 3 — Voice study (how they sound)
 

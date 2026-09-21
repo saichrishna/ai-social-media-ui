@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  countCorpusMaterial,
   countYourWordsMaterial,
   deriveBrandSetupStatus,
   deriveListBrandSetupStatus,
 } from "@/lib/brands/brand-readiness";
-import type { BrandProfile, InterviewAnswer, VoiceSample } from "@/types/brand";
+import type {
+  BrandProfile,
+  CorpusItem,
+  InterviewAnswer,
+  VoiceSample,
+} from "@/types/brand";
 
 const completePromise: BrandProfile = {
   id: "b1",
@@ -60,13 +66,12 @@ describe("brand readiness", () => {
       deriveBrandSetupStatus(
         { ...completePromise, not_for: "", target_audience: "" },
         [],
-        [],
       ),
     ).toBe("promise_incomplete");
   });
 
-  it("needs three material items for ready_to_draft", () => {
-    const samples: VoiceSample[] = [
+  it("needs three corpus items for ready_to_draft", () => {
+    const items: CorpusItem[] = [
       {
         id: "1",
         user_id: "u1",
@@ -78,22 +83,19 @@ describe("brand readiness", () => {
         id: "2",
         user_id: "u1",
         brand_profile_id: "b1",
-        source: "paste",
+        source: "mini_talk",
         content: "b",
       },
-    ];
-    const answers: InterviewAnswer[] = [
       {
-        id: "a1",
+        id: "3",
         user_id: "u1",
         brand_profile_id: "b1",
-        question_key: "k",
-        question_text: "",
-        answer_text: "c",
-        source: "type",
+        source: "full_talk",
+        content: "c",
       },
     ];
-    expect(deriveBrandSetupStatus(completePromise, samples, answers)).toBe(
+    expect(countCorpusMaterial(items)).toBe(3);
+    expect(deriveBrandSetupStatus(completePromise, items)).toBe(
       "ready_to_draft",
     );
   });

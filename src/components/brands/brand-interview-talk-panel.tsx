@@ -21,6 +21,7 @@ import {
   type SmallWebRtcSession,
 } from "@/lib/voice/small-webrtc";
 import { useUserId } from "@/lib/auth";
+import { recordRecentAction } from "@/lib/activity/recent-actions";
 import type { BrandProfile } from "@/types/brand";
 import type { InterviewSession } from "@/types/brand-dna";
 
@@ -47,9 +48,11 @@ function backendOriginForSidecar(): string {
 export function BrandInterviewTalkPanel({
   profile,
   onExit,
+  mode = "full",
 }: {
   profile: BrandProfile;
   onExit: () => void;
+  mode?: "full" | "mini";
 }) {
   const userId = useUserId();
   const queryClient = useQueryClient();
@@ -131,12 +134,18 @@ export function BrandInterviewTalkPanel({
         throw new Error("missing user");
       }
       const text = coldOpen.trim();
-      if (!text) {
+      if (mode === "full" && !text) {
         throw new Error("empty cold open");
       }
-      return startInterviewSession(profileId, userId, text, {
-        forceNew: options?.forceNew,
-      });
+      return startInterviewSession(
+        profileId,
+        userId,
+        text || profile.business_name || "Quick thought",
+        {
+          forceNew: options?.forceNew,
+          mode,
+        },
+      );
     },
     onSuccess: (data) => {
       setSession(data.interview_session);
@@ -166,12 +175,18 @@ export function BrandInterviewTalkPanel({
     },
   });
 
+  const miniAutoStarted = useRef(false);
+  useEffect(() => {
+    if (mode !== "mini" || miniAutoStarted.current || !userId) {
+      return;
+    }
+    miniAutoStarted.current = true;
+    startMutation.mutate({ forceNew: false });
+  }, [mode, userId, startMutation]);
+
   async function refreshSavedWords() {
     await queryClient.invalidateQueries({
-      queryKey: ["brand-voice-samples", profileId],
-    });
-    await queryClient.invalidateQueries({
-      queryKey: ["brand-interview-answers", profileId],
+      queryKey: ["brand-corpus-items", profileId],
     });
   }
 
@@ -257,7 +272,16 @@ export function BrandInterviewTalkPanel({
       setSession(null);
       disconnect();
       await refreshSavedWords();
-      toast.success("Saved to Your words");
+      recordRecentAction({
+        kind: "brand_words",
+        href: `/brands/${encodeURIComponent(profileId)}?tab=words`,
+        label: mode === "mini" ? "Mini talk saved" : "Talk saved",
+      });
+      toast.success(
+        mode === "mini"
+          ? "Added to your words"
+          : "Saved to Your words",
+      );
       handleExit();
     } catch {
       toast.error(USER_SAFE_ERROR_MESSAGE);
@@ -390,6 +414,7 @@ export function BrandInterviewTalkPanel({
   return (
     <TalkSessionView
       brandName={profile.business_name}
+      sessionVariant={mode}
       phase={phase}
       coldOpen={coldOpen}
       onColdOpenChange={setColdOpen}

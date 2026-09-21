@@ -35,6 +35,7 @@ function questionProgress(session: InterviewSession | null): {
 
 export function TalkSessionView({
   brandName,
+  sessionVariant = "full",
   phase,
   coldOpen,
   onColdOpenChange,
@@ -64,6 +65,7 @@ export function TalkSessionView({
   onFinishReview,
 }: {
   brandName: string;
+  sessionVariant?: "full" | "mini";
   phase: TalkPhase;
   coldOpen: string;
   onColdOpenChange: (value: string) => void;
@@ -143,12 +145,12 @@ export function TalkSessionView({
                 <MicIcon className="size-7" />
               </div>
               <h1 className="text-2xl font-semibold tracking-tight">
-                Talk session
+                {sessionVariant === "mini" ? "Mini talk" : "Talk session"}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                About eight minutes. One question at a time. You save each
-                answer when it feels complete — we never split your rant across
-                questions.
+                {sessionVariant === "mini"
+                  ? "One or two quick questions. Save each answer to your corpus."
+                  : "About eight minutes. One question at a time. You save each answer when it feels complete."}
               </p>
             </div>
             <label className="flex flex-col gap-2 text-sm">

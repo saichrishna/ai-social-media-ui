@@ -21,6 +21,7 @@ import { useBrandSelection } from "@/lib/brands/brand-selection-provider";
 import { mapGenerateSocialContentResult } from "@/lib/content/map-generate-result";
 import { isRecoverableGenerateError } from "@/lib/content/is-recoverable-generate-error";
 import { useDraftGenerateFlow } from "@/lib/content/use-draft-generate-flow";
+import { recordRecentAction } from "@/lib/activity/recent-actions";
 
 const CREATE_FAILURE_TITLE = "We couldn't create your post.";
 const CREATE_FAILURE_DESCRIPTION =
@@ -70,6 +71,11 @@ export default function CreatePage() {
       });
     },
     onSuccess: (payload) => {
+      recordRecentAction({
+        kind: "create",
+        href: `/create?platform=${encodeURIComponent(platform)}`,
+        label: `Create · ${platform}`,
+      });
       if (
         draftFlow.handleGenerateSuccess(payload, userId, {
           brandProfileId: selectedBrandProfileId!,

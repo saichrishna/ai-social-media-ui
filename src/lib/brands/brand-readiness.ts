@@ -1,4 +1,5 @@
 import type { BrandProfile } from "@/types/brand";
+import type { CorpusItem } from "@/types/brand";
 import type { InterviewAnswer } from "@/types/brand";
 import type { VoiceSample } from "@/types/brand";
 
@@ -17,6 +18,11 @@ export function promiseIsComplete(profile: BrandProfile): boolean {
   );
 }
 
+export function countCorpusMaterial(items: CorpusItem[]): number {
+  return items.filter((item) => item.content?.trim()).length;
+}
+
+/** @deprecated Use corpus items — kept for tests migrating off dual-store counts. */
 export function countYourWordsMaterial(
   samples: VoiceSample[],
   answers: InterviewAnswer[],
@@ -32,13 +38,12 @@ export function countYourWordsMaterial(
 
 export function deriveBrandSetupStatus(
   profile: BrandProfile,
-  samples: VoiceSample[],
-  answers: InterviewAnswer[],
+  corpusItems: CorpusItem[],
 ): BrandSetupStatus {
   if (!promiseIsComplete(profile)) {
     return "promise_incomplete";
   }
-  const materialCount = countYourWordsMaterial(samples, answers);
+  const materialCount = countCorpusMaterial(corpusItems);
   if (materialCount < 3) {
     return "need_your_words";
   }
